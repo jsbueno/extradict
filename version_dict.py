@@ -1,0 +1,125 @@
+# coding: utf-8
+"""
+Module for a versioned version of Python's dictionaries - 
+one can retrieve any "past" value that had existed previously
+by using the "get" method with an extra "version" parameter - 
+also, the "version" is an explicit read only attribute
+that allows one to know wether a dictionary had  changed.
+
+Tests: to be done
+"""
+
+
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
+
+from collections import namedtuple, OrderedDict
+import threading
+
+
+__author__ = "João S. O. Bueno"
+__license__ = "LGPL v. 3.0 or later"
+
+
+VersionedValue = namedtuple("VersionedValue", "version value")
+Deleted = object()
+
+class VersionDict(MutableMapping):
+    _dictclass = dict
+    def __init__(self, *args, **kw):
+        self._version = 0
+        initial = dict(*args, **kw)
+        self.data = self._dictclass()
+        for key, value in initial.items():
+            self.data[key] = [VersionedValue(self._version, value)]
+        self.local= threading.local()
+        self.local._updating = False
+
+    def copy(self):
+        new = VersionDict.__new__(self.__class___)
+        from copy import copy
+        new._version = self._version
+        new.data = copy(self.data)
+        return new
+
+    def update(self, other):
+        """The update operation uses a single version number for 
+            all affected keys
+        """
+        with threading.Lock():
+            self._version += 1
+            try:
+                self.local._updating = True
+                super(VersionDict, self).update(other)
+            finally:
+                self.local._updating = False
+
+
+    def get(self, item, default=Deleted, version=None):
+        """
+            VersionedDict.get(item, default=None) -> same as dict.get
+            VersionedDict.get(item, [default=Sentinel], version) ->
+                returns existing value at the given dictionary version. If
+                value was not set, and no default is given, 
+                raises KeyError (unlike regular dict)
+        """
+        if version is None:
+            return super(VersionDict, self).get(item, default)
+        try:
+            values = self.data[item]
+            i = -1
+            while values[i].version > version:
+                i -= 1
+        except (KeyError, IndexError):
+            if default is not Deleted:
+                return default
+            raise KeyError("'{}' was not set at dict version {}".format(item, version))
+        if values[i].value is Deleted:
+            raise KeyError("'{}' was not set at dict version {}".format(item, version))
+        return values[i].value
+
+    def __getitem__(self, item):
+        value = self.data[item][-1]
+        if value.value is Deleted:
+            raise KeyError("Item: {} deleted key".format(item))
+        return value.value
+
+    def __setitem__(self, item, value):
+        with threading.Lock():
+            if not self.local._updating:
+                self._version += 1
+            if item not in self.data:
+                self.data[item] = []
+            self.data[item].append(VersionedValue(self._version, value))
+
+    def __delitem__(self, item):
+        self._version += 1
+        self.data[item].append(VersionedValue(self._version, Deleted))
+
+    def __iter__(self):
+        for key, value in self.data.items():
+            if value.value is not Deleted:
+                yield key
+
+    def __len__(self):
+        return sum(1 for x in self.data.values() if x.value != Deleted)
+
+    @property
+    def version(self):
+        return self._version
+
+
+class OrderedVersionedDict(VersionedDict):
+    _dictclass = OrderedDict
+    def __iter__(self):
+        versions_for_keys = {}
+        for key, values in self.data.items():
+            if values[-1].value is Deleted:
+                continue
+            versions_for_keys.setdefault(values[-1].version, []).append(key)
+        for version in sorted(versions_for_keys.keys()):
+            # yield from versions_for_keys[key]
+            for key in versions_for_keys[key]:
+                yield key
