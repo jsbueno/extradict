@@ -1,0 +1,43 @@
+# this is run by doctest
+
+# Simple Doc tests for VersionDict
+
+>>> from version_dict import VersionDict as VD
+>>>
+#
+# Non verssioning dict - uncoment to compare tests:
+#
+# >>> VD = type("vd", (dict,), {"get": lambda s, v,d=None, **kw: dict.get(s, v,d)})
+>>> x = VD(a=0, b=1, c=2)
+>>> x["a"]
+0
+>>> x.get("a")
+0
+>>> x.version
+0
+>>> x["a"] = 3
+>>> x["a"]
+3
+>>> x.version
+1
+>>> x.get("a", version=0)
+0
+>>> x.get("a", version=1)
+3
+>>> x.get("e")
+>>> x.get("e", version=0) # doctest: +ELLIPSIS
+Traceback (most recent call last):
+     ...
+KeyError: ...
+>>> x.update(dict(b=4, d=5, e=6))
+>>> x.version
+2
+>>> x.get("e")
+6
+>>> x.get("a", version=1)
+3
+>>> x.get("a", version=2)
+3
+>>> x.get("a", version=0)
+0
+

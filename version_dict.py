@@ -1,8 +1,8 @@
 # coding: utf-8
 """
-Module for a versioned version of Python's dictionaries - 
+Module for a versioned version of Python's dictionaries -
 one can retrieve any "past" value that had existed previously
-by using the "get" method with an extra "version" parameter - 
+by using the "get" method with an extra "version" parameter -
 also, the "version" is an explicit read only attribute
 that allows one to know wether a dictionary had  changed.
 
@@ -24,7 +24,7 @@ __license__ = "LGPL v. 3.0 or later"
 
 
 VersionedValue = namedtuple("VersionedValue", "version value")
-Deleted = object()
+_Deleted = object()
 
 class VersionDict(MutableMapping):
     _dictclass = dict
@@ -45,7 +45,7 @@ class VersionDict(MutableMapping):
         return new
 
     def update(self, other):
-        """The update operation uses a single version number for 
+        """The update operation uses a single version number for
             all affected keys
         """
         with threading.Lock():
@@ -57,32 +57,32 @@ class VersionDict(MutableMapping):
                 self.local._updating = False
 
 
-    def get(self, item, default=Deleted, version=None):
+    def get(self, item, default=_Deleted, version=None):
         """
             VersionedDict.get(item, default=None) -> same as dict.get
             VersionedDict.get(item, [default=Sentinel], version) ->
                 returns existing value at the given dictionary version. If
-                value was not set, and no default is given, 
+                value was not set, and no default is given,
                 raises KeyError (unlike regular dict)
         """
         if version is None:
-            return super(VersionDict, self).get(item, default)
+            return super(VersionDict, self).get(item, default=(None if default is _Deleted else default))
         try:
             values = self.data[item]
             i = -1
             while values[i].version > version:
                 i -= 1
         except (KeyError, IndexError):
-            if default is not Deleted:
+            if default is not _Deleted:
                 return default
             raise KeyError("'{}' was not set at dict version {}".format(item, version))
-        if values[i].value is Deleted:
+        if values[i].value is _Deleted:
             raise KeyError("'{}' was not set at dict version {}".format(item, version))
         return values[i].value
 
     def __getitem__(self, item):
         value = self.data[item][-1]
-        if value.value is Deleted:
+        if value.value is _Deleted:
             raise KeyError("Item: {} deleted key".format(item))
         return value.value
 
@@ -96,27 +96,27 @@ class VersionDict(MutableMapping):
 
     def __delitem__(self, item):
         self._version += 1
-        self.data[item].append(VersionedValue(self._version, Deleted))
+        self.data[item].append(VersionedValue(self._version, _Deleted))
 
     def __iter__(self):
         for key, value in self.data.items():
-            if value.value is not Deleted:
+            if value.value is not _Deleted:
                 yield key
 
     def __len__(self):
-        return sum(1 for x in self.data.values() if x.value != Deleted)
+        return sum(1 for x in self.data.values() if x.value != _Deleted)
 
     @property
     def version(self):
         return self._version
 
 
-class OrderedVersionedDict(VersionedDict):
+class OrderedVersionDict(VersionDict):
     _dictclass = OrderedDict
     def __iter__(self):
         versions_for_keys = {}
         for key, values in self.data.items():
-            if values[-1].value is Deleted:
+            if values[-1].value is _Deleted:
                 continue
             versions_for_keys.setdefault(values[-1].version, []).append(key)
         for version in sorted(versions_for_keys.keys()):
