@@ -6,7 +6,6 @@ by using the "get" method with an extra "version" parameter -
 also, the "version" is an explicit read only attribute
 that allows one to know wether a dictionary had  changed.
 
-Tests: to be done
 """
 
 
@@ -30,7 +29,7 @@ class VersionDict(MutableMapping):
     _dictclass = dict
     def __init__(self, *args, **kw):
         self._version = 0
-        initial = dict(*args, **kw)
+        initial = self._dictclass(*args, **kw)
         self.data = self._dictclass()
         for key, value in initial.items():
             self.data[key] = [VersionedValue(self._version, value)]
@@ -121,5 +120,5 @@ class OrderedVersionDict(VersionDict):
             versions_for_keys.setdefault(values[-1].version, []).append(key)
         for version in sorted(versions_for_keys.keys()):
             # yield from versions_for_keys[key]
-            for key in versions_for_keys[key]:
+            for key in versions_for_keys[version]:
                 yield key

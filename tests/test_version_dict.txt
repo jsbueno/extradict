@@ -40,4 +40,37 @@ KeyError: ...
 3
 >>> x.get("a", version=0)
 0
-
+>>>
+#
+# Tests for OrderedVersionDict
+# ============================
+>>> from version_dict import OrderedVersionDict as OVD
+>>> x = OVD([("a", 0), ("b", 1), ("c", 2)])
+>>> for k in x: print(k)
+a
+b
+c
+>>> x["a"] = 3
+>>> for k in x: print(k)
+b
+c
+a
+>>> x["d"] = 5
+>>> for k in x: print(k)
+b
+c
+a
+d
+>>> x["a"] = 6
+>>> for k in x: print(k)
+b
+c
+d
+a
+>>> x.version
+3
+>>> for k in x.items(): print(k)
+('b', 1)
+('c', 2)
+('d', 5)
+('a', 6)
