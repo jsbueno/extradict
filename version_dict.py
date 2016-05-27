@@ -76,13 +76,15 @@ class VersionDict(MutableMapping):
                 return default
             raise KeyError("'{}' was not set at dict version {}".format(item, version))
         if values[i].value is _Deleted:
+            if default is not _Deleted:
+                return default
             raise KeyError("'{}' was not set at dict version {}".format(item, version))
         return values[i].value
 
     def __getitem__(self, item):
         value = self.data[item][-1]
         if value.value is _Deleted:
-            raise KeyError("Item: {} deleted key".format(item))
+            raise KeyError("'{}' is a deleted key".format(item))
         return value.value
 
     def __setitem__(self, item, value):
