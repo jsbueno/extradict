@@ -1,8 +1,6 @@
 # coding: utf-8
 
 from setuptools import setup
-from extradict import __author__, __version__
-
 
 def get_str_in_line(line):
     quotechar = "'" if "'" in line else "\""
