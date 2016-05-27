@@ -2,7 +2,7 @@
 
 # Simple Doc tests for VersionDict
 
->>> from version_dict import VersionDict as VD
+>>> from extradict import VersionDict as VD
 >>>
 #
 # Non versioning dict - uncoment to compare tests:
@@ -77,7 +77,7 @@ AttributeError: ...
 #
 # Tests for OrderedVersionDict
 # ============================
->>> from version_dict import OrderedVersionDict as OVD
+>>> from extradict import OrderedVersionDict as OVD
 >>> x = OVD([("a", 0), ("b", 1), ("c", 2)])
 >>> for k in x: print(k)
 a
