@@ -79,6 +79,12 @@ AttributeError: ...
 >>> sorted(a.items())
 [('a', 0), ('b', 1)]
 >>>
+# test for __repr__:
+>>> a = VD(a=0)
+>>> repr(a)
+'<VersionDict(a=0) at version 0>'
+>>>
+
 
 #
 # Tests for OrderedVersionDict

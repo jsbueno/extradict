@@ -108,6 +108,13 @@ class VersionDict(MutableMapping):
     def version(self):
         return self._version
 
+    def __repr__(self):
+        return "<{}({}) at version {}>".format(
+            self.__class__.__name__,
+            ", ".join("{}={!r}".format(*item) for item in self.items()),
+            self.version
+        )
+
 
 class OrderedVersionDict(VersionDict):
     _dictclass = OrderedDict
