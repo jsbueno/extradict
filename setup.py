@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'extradict',
-    version = "0.1.2",
+    version = "0.1.3",
     license = "LGPLv3+",
     author = "João S. O. Bueno",
     author_email = "gwidion@gmail.com",
