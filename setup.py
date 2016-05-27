@@ -1,10 +1,11 @@
 # coding: utf-8
 
-from setuptools import setup
+from distutils.core import setup
 
 setup(
     name = 'extradict',
-    version = "0.1.3",
+    packages = ['extradict'],
+    version = "0.1.4",
     license = "LGPLv3+",
     author = "João S. O. Bueno",
     author_email = "gwidion@gmail.com",
