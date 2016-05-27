@@ -84,12 +84,27 @@ AttributeError: ...
 >>> repr(a)
 '<VersionDict(a=0) at version 0>'
 >>>
-# Copy test:
+# Copy and freeze tests:
 >>> x = VD(a=0, b=1, c=2)
 >>> x.copy() == x
 True
 >>> sorted(x.copy().items())
 [('a', 0), ('b', 1), ('c', 2)]
+>>>
+>>> x = VD(a=0, b=1, c=2)
+>>> x["a"] = 2
+>>> sorted(x.copy(version=0).items())
+[('a', 0), ('b', 1), ('c', 2)]
+>>> del x['a']
+>>> sorted(x.copy(version=1).items())
+[('a', 2), ('b', 1), ('c', 2)]
+>>> x = VD(a=0)
+>>> x["a"] = 1
+>>> x.freeze(0)
+{'a': 0}
+>>> del x["a"]
+>>> x.freeze(0)
+{'a': 0}
 >>>
 
 #
@@ -125,3 +140,21 @@ a
 ('c', 2)
 ('d', 5)
 ('a', 6)
+>>> x = OVD([("a", 0), ("b", 1), ("c", 2)])
+>>> x.freeze()
+OrderedDict([('a', 0), ('b', 1), ('c', 2)])
+>>> x["a"] = 3
+>>> x["d"] = 4
+>>> list(x.copy(version=1).keys())
+['b', 'c', 'a']
+>>> x.copy(version=1).version
+1
+>>> x.copy(version=1).copy(version=0)
+<OrderedVersionDict(a=0, b=1, c=2) at version 0>
+>>> x = OVD([("a", 0), ("b", 1), ("c", 2)])
+>>> del x["a"]
+>>> x["a"] = 3
+>>> "a" not in x.freeze(1)
+True
+>>> "a" in x.freeze()
+True

@@ -33,11 +33,31 @@ class VersionDict(MutableMapping):
         self.local= threading.local()
         self.local._updating = False
 
-    def copy(self):
-        new = VersionDict.__new__(self.__class__)
+    def copy(self, version=None):
         from copy import copy
-        new._version = self._version
-        new.data = copy(self.data)
+        new = VersionDict.__new__(self.__class__)
+        if version is None or version >= self.version:
+            new._version = self._version
+            new.data = copy(self.data)
+        else:
+            new._version = version
+            new.data = self._dictclass()
+            for key, value in self.data.items():
+                new_values = [value_item for value_item in value if value_item.version <= version]
+                if new_values:
+                    new.data[key] = new_values
+
+        return new
+
+    def freeze(self, version=None):
+        new = self._dictclass()
+        if version is None:
+            version = self.version
+        _default = object()
+        for key, value in self.data.items():
+            frozen_value = self.get(key, _default, version=version)
+            if frozen_value != _default:
+                new[key] = frozen_value
         return new
 
     def update(self, other):
@@ -118,6 +138,17 @@ class VersionDict(MutableMapping):
 
 class OrderedVersionDict(VersionDict):
     _dictclass = OrderedDict
+
+    def freeze(self, version=None):
+        new = self._dictclass()
+        if version is None:
+            version = self.version
+        # Making a verioned copy instead of iterating on self.data preserves
+        # order semantics for OrderedVersionDict
+        for key, value in self.copy(version).items():
+            new[key] = value
+        return new
+
     def __iter__(self):
         versions_for_keys = {}
         for key, values in self.data.items():

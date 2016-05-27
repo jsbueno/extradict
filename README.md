@@ -13,13 +13,21 @@ Use it wherever you would use a dict - at each
 key change or update, it's `version` attribute
 is increased by one.
 
-The `get` method is modified to receive an optional
+Special and modified methods:
+_____________________________
+
+`.get` method is modified to receive an optional
 named  `version` parameter that allows one to retrieve
 for a key the value it contained at that respective version.
-
 NB. When using the `version` parameter, `get` will raise
 a KeyError if the key does not exist for that version and
 no default value is specified.
+
+`.copy(version=None)`:  yields a copy of the current dictonary at that version, with history preserved
+(if version is not given, the current version is used)
+
+`.freeze(version=None)` yields a snapshot of the versionDict in the form of a plain dictionary for
+the specified version
 
 
 Implementation:
@@ -46,7 +54,7 @@ For extra examples, check the "tests" directory
 
 OrderedVersionDict
 ====================
-Like VersionDict, but preserves and retrieves key
+Inherits from VersionDict, but preserves and retrieves key
 insertion order. Unlike a plain "collections.OrderedDict",
 however, whenever a key's value is updated, it is moved
 last on the dictionary order.
