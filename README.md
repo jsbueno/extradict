@@ -1,20 +1,17 @@
-==================================================
-Extra Dictionary classes and utilities for Python
-==================================================
+# Extra Dictionary classes and utilities for Python
 
 New utilities to be added as they are devised
 
 
-VersionDict
-============
+## VersionDict
+
 A Python Mutable Mapping Container (dictionary :-) ) that
 can "remember" previous values.
 Use it wherever you would use a dict - at each
 key change or update, it's `version` attribute
 is increased by one.
 
-Special and modified methods:
-_____________________________
+### Special and modified methods:
 
 `.get` method is modified to receive an optional
 named  `version` parameter that allows one to retrieve
@@ -30,14 +27,12 @@ no default value is specified.
 the specified version
 
 
-Implementation:
-_________________
+### Implementation:
 It works by internally keeping a list of (named)tuples with
 (version, value) for each key.
 
 
-Example:
-_________
+### Example:
 
 ```
 
@@ -52,16 +47,15 @@ _________
 
 For extra examples, check the "tests" directory
 
-OrderedVersionDict
-====================
+## OrderedVersionDict
+
 Inherits from VersionDict, but preserves and retrieves key
 insertion order. Unlike a plain "collections.OrderedDict",
 however, whenever a key's value is updated, it is moved
 last on the dictionary order.
 
-Example:
-_________
-
+### Example:
+```
 >>> from collections import OrderedDict
 >>> a = OrderedDict((("a", 1), ("b", 2), ("c", 3)))
 >>> list(a.keys())
@@ -77,3 +71,4 @@ _________
 >>> a["a"] = 3
 >>> list(a.keys())
 ['b', 'c', 'a']
+```
