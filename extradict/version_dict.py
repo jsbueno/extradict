@@ -8,7 +8,6 @@ that allows one to know wether a dictionary had  changed.
 
 """
 
-
 try:
     from collections.abc import MutableMapping
 except ImportError:
@@ -18,12 +17,10 @@ from collections import namedtuple, OrderedDict
 import threading
 
 
-__author__ = "João S. O. Bueno"
-__license__ = "LGPL v. 3.0 or later"
-
-
 VersionedValue = namedtuple("VersionedValue", "version value")
+
 _Deleted = object()
+
 
 class VersionDict(MutableMapping):
     _dictclass = dict
@@ -101,11 +98,11 @@ class VersionDict(MutableMapping):
 
     def __iter__(self):
         for key, value in self.data.items():
-            if value.value is not _Deleted:
+            if value[-1].value is not _Deleted:
                 yield key
 
     def __len__(self):
-        return sum(1 for x in self.data.values() if x.value != _Deleted)
+        return sum(1 for x in self.data.values() if x[-1].value != _Deleted)
 
     @property
     def version(self):

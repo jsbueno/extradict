@@ -74,6 +74,12 @@ Traceback (most recent call last):
     ...
 AttributeError: ...
 >>>
+# tests for item enumeration:
+>>> a = VD(a=0, b=1)
+>>> sorted(a.items())
+[('a', 0), ('b', 1)]
+>>>
+
 #
 # Tests for OrderedVersionDict
 # ============================
