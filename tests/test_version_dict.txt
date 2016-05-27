@@ -84,7 +84,13 @@ AttributeError: ...
 >>> repr(a)
 '<VersionDict(a=0) at version 0>'
 >>>
-
+# Copy test:
+>>> x = VD(a=0, b=1, c=2)
+>>> x.copy() == x
+True
+>>> sorted(x.copy().items())
+[('a', 0), ('b', 1), ('c', 2)]
+>>>
 
 #
 # Tests for OrderedVersionDict

@@ -34,7 +34,7 @@ class VersionDict(MutableMapping):
         self.local._updating = False
 
     def copy(self):
-        new = VersionDict.__new__(self.__class___)
+        new = VersionDict.__new__(self.__class__)
         from copy import copy
         new._version = self._version
         new.data = copy(self.data)
