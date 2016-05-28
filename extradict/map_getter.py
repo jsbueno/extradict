@@ -1,17 +1,16 @@
-#import  importlib
-#import importlib.abc
 import threading
 import sys
 
 
 #Naive implementation - without importlib and importhooks:
 
+
 class _PseudoModule(object):
     def __init__(self, mapping):
         self.__dict__ = mapping
     def getlines(self, file):
         return ""
-import pdb
+
 
 class MapGetter(object):
     """
@@ -20,8 +19,8 @@ class MapGetter(object):
     >>> with MapGetter(a) as blah:
     ...    from blah import b, c
 
-    >>> print(b, c)
-    1 2
+    >>> print((b, c))
+    (1, 2)
     """
     def __init__(self, mapping):
         self.builtins = __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
@@ -30,8 +29,8 @@ class MapGetter(object):
     def __enter__(self):
         self.original_import = self.builtins["__import__"]
         self.builtins["__import__"] = self._map_getter
-        self.tr_context = threading.Lock()
-        self.tr_context.__enter__()
+        self.tr_context = threading.RLock()
+        self.tr_context.acquire()
         return self.mapping
 
     def _map_getter(self, name, globals_, locals_, from_list_, level=-1):
@@ -41,4 +40,4 @@ class MapGetter(object):
 
     def __exit__(self, type, value, traceback):
         self.builtins["__import__"] = self.original_import
-        return self.tr_context.__exit__(type, value, traceback)
+        return self.tr_context.release()
