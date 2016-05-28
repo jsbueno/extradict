@@ -14,6 +14,7 @@ setup(
     py_modules = ['extradict'],
     url = 'https://github.com/jsbueno/extradict',
     long_description = open('README.md').read(),
+    test_requites = ['pytest'],
     classifiers = [
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

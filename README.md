@@ -72,3 +72,22 @@ last on the dictionary order.
 >>> list(a.keys())
 ['b', 'c', 'a']
 ```
+
+## MapGetter
+A Context manager that allows one to pick variables from inside a dictionary
+(or mapping) by using the  `from <mydict> import key1, key2` statement.
+
+
+
+```
+>>> from extradict import MapGetter
+>>> a = dict(b="test", c="another test")
+>>> with MapGetter(a) as a:
+...     from a import b, c
+...
+>>> print (b, c)
+test another test
+```
+
+The syntax `from <mydict> import key1 as var1` works as well.
+

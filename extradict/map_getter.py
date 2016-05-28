@@ -1,4 +1,3 @@
-import threading
 import sys
 
 
@@ -29,8 +28,6 @@ class MapGetter(object):
     def __enter__(self):
         self.original_import = self.builtins["__import__"]
         self.builtins["__import__"] = self._map_getter
-        self.tr_context = threading.RLock()
-        self.tr_context.acquire()
         return self.mapping
 
     def _map_getter(self, name, globals_, locals_, from_list_, level=-1):
@@ -40,4 +37,4 @@ class MapGetter(object):
 
     def __exit__(self, type, value, traceback):
         self.builtins["__import__"] = self.original_import
-        return self.tr_context.release()
+        return False
