@@ -15,7 +15,7 @@ class _PseudoModule(object):
 
 class MapGetter(object):
     """
-    # Example: (does not work with Doctest, as it does not allow mangling __import__)
+    # Example: 
     >>> a = dict(b=1, c=2)
     >>> with MapGetter(a) as map:
     ...    from map import b, c
@@ -24,12 +24,14 @@ class MapGetter(object):
     1 2
     """
     def __init__(self, mapping):
+        self.builtins = __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
         self.mapping = mapping
 
 
     def __enter__(self):
-        self.original_import = __builtins__.__import__
-        __builtins__.__import__ = self._map_getter
+
+        self.original_import = self.builtins["__import__"]
+        self.builtins["__import__"] = self._map_getter
         self.tr_context = threading.Lock()
         self.tr_context.__enter__()
 
@@ -41,6 +43,6 @@ class MapGetter(object):
         return _PseudoModule(self.mapping)
 
     def __exit__(self, type, value, traceback):
-        __builtins__.__importlib__ = self.original_import
+        self.builtins["__import__"] = self.original_import
         return self.tr_context.__exit__(type, value, traceback)
 
