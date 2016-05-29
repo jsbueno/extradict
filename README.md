@@ -91,3 +91,32 @@ test another test
 
 The syntax `from <mydict> import key1 as var1` works as well.
 
+## BijectiveDict
+This is a bijective dictionary for which each pair key, value added
+is also added as value, key.
+
+The explictly inserted keys can be retrieved as the "assigned_keys"
+attribute - and a dictionary copy with all such keys is available
+at the "BijectiveDict.assigned".
+Conversely, the generated keys are exposed as "BijectiveDict.generated_keys"
+and can be seen as a dict at "Bijective.generated"
+
+```
+>>> from extradict import BijectiveDict
+>>>
+>>> a = BijectiveDict(b = 1, c = 2)
+>>> a
+BijectiveDict({'b': 1, 2: 'c', 'c': 2, 1: 'b'})
+>>> a[2]
+'c'
+>>> a[2] = "d"
+>>> a["d"]
+2
+>>> a["c"]
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/gwidion/projetos/extradict/extradict/reciprocal_dict.py", line 31, in __getitem__
+    return self._data[item]
+KeyError: 'c'
+>>>
+```
