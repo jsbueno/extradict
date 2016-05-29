@@ -5,3 +5,5 @@ env
 env3
 dist
 *egg-info
+MANIFEST
+.cache
