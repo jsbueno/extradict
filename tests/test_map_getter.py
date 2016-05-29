@@ -1,11 +1,13 @@
 from extradict import MapGetter
 import threading
 
+
 def test_mapgetter_creates_local_variables():
     a = dict(b=1, c=2)
     with MapGetter(a) as a:
         from a import b, c
     assert b == 1 and c == 2
+
 
 def test_mapgetter_can_be_used_with_key_renaming():
     a = dict(b=1, c=2)
@@ -13,11 +15,13 @@ def test_mapgetter_can_be_used_with_key_renaming():
         from a import b as d, c as e
     assert d == 1 and e == 2
 
+
 def test_mapgetter_can_use_any_name():
     a = dict(b=1, c=2)
     with MapGetter(a) as anyname:
         from anyname import b, c
     assert b == 1 and c == 2
+
 
 def test_mapgetter_can_use_existing_module_name():
     a = dict(b=1, c=2)
@@ -25,15 +29,14 @@ def test_mapgetter_can_use_existing_module_name():
         from math import b, c
     assert b == 1 and c == 2
 
+
 def test_regular_import_works_from_within_():
     a = dict(b=1, c=2)
     with MapGetter(a) as a:
         from math import cos
     assert cos
 
-from  unittest.mock import Mock
 
-#@Mock("extradict.map_getter.threading.RLock")
 def test_mapgetter_is_thread_safe():
     import time
     a = dict(b=1, c=2)
