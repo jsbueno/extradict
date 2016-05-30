@@ -6,5 +6,5 @@ from .reciprocal_dict import BijectiveDict
 
 
 __author__ = "João S. O. Bueno"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
