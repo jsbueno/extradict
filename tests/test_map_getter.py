@@ -67,3 +67,65 @@ def test_mapgetter_is_thread_safe():
     t2.join()
     from math import cos
     assert nonlocal_check == [False, cos, 1, 2]
+
+
+def test_mapgetter_works_with_default_value():
+    with MapGetter(default=None) as m:
+        from m import n, o, p
+    assert n is None
+    assert o is None
+    assert p is None
+
+
+def test_mapgetter_works_with_default_function_with_parameters():
+    with MapGetter(default=lambda name:name) as m:
+        from m import foo, bar
+    assert foo == "foo"
+    assert bar == "bar"
+
+
+def test_mapgetter_works_with_default_function_without_parameters():
+    with MapGetter(default=lambda : "baz") as m:
+        from m import foo, bar
+    assert foo == "baz"
+    assert bar == "baz"
+
+
+def test_mapgetter_works_with_default_non_function_callable():
+    class Defaulter(object):
+        def __call__(self, name):
+            return name
+
+    with MapGetter(default=Defaulter()) as m:
+        from m import foo, bar
+    assert foo == "foo"
+    assert bar == "bar"
+
+    class Defaulter(object):
+        def __call__(self):
+            return "baz"
+
+    with MapGetter(default=Defaulter()) as m:
+        from m import foo, bar
+
+    assert foo == "baz"
+    assert bar == "baz"
+
+
+def test_mapgetter_works_with_defaultdict():
+    from collections import defaultdict
+
+    with MapGetter(defaultdict(lambda: "baz")) as m:
+        from m import foo, bar
+
+    assert foo == "baz"
+    assert bar == "baz"
+
+
+def test_mapgetter_works_with_mapping_and_default_parameter():
+    a = dict(b=1, c=2)
+    with MapGetter(a, default=lambda name:name) as a:
+        from a import b, c, d
+    assert b == 1 and c == 2 and d == 'd'
+
+

@@ -1,16 +1,40 @@
 import sys
 import threading
 
+from collections import defaultdict
+_sentinel = object()
 
 class _PseudoModule(object):
-    def __init__(self, mapping):
+    def __init__(self, mapping, default=_sentinel):
         self.__dict__ = mapping
+        self._default = default
+
     def getlines(self, file):
         return ""
 
+    def __getattr__(self, attr):
+        if self._default is _sentinel:
+            # Try to extract a value from mapping, which could be a
+            # defaultdict or some similar mapping:
+            try:
+                value = self.__dict__[attr]
+            except KeyError:
+                raise AttributeError("Mapping '{}' has no '{}' key".format(type(self.mapping), attr ))
+            return value
+        if not callable(self._default):
+            return self._default
+        try:
+            value = self._default(attr)
+        except TypeError:
+            # try default dict style argumentless default factory:
+            value = self._default()
+        return value
 
 class MapGetter(object):
     """
+    A context manager to allow one to "import" variables from a mapping or
+    factory function. This helps preserve DRY principle:
+
     # Example:
     >>> a = dict(b=1, c=2)
     >>> with MapGetter(a) as blah:
@@ -18,10 +42,15 @@ class MapGetter(object):
 
     >>> print((b, c))
     (1, 2)
+
+
     """
-    def __init__(self, mapping):
+    def __init__(self, mapping=None, default=_sentinel):
+        if mapping is None and default is _sentinel:
+            raise TypeError("MapGetter must be called with at least one of mapping or default (value/factory function)")
         self.builtins = __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
-        self.mapping = mapping
+        self.mapping = mapping if mapping is not None else {}
+        self.default = default
 
     def __enter__(self):
         self.original_import = self.builtins["__import__"]
@@ -38,7 +67,7 @@ class MapGetter(object):
         # module to be created on sys.modules - which we don't want.
         if threading.current_thread() != self._thread or sys._getframe().f_back.f_locals.get(name, None) is not self.mapping:
             return self.original_import(name, globals_, locals_, from_list, level)
-        return _PseudoModule(self.mapping)
+        return _PseudoModule(self.mapping, self.default)
 
     def __exit__(self, type, value, traceback):
         self.builtins["__import__"] = self.original_import

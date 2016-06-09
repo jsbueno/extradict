@@ -89,6 +89,29 @@ A Context manager that allows one to pick variables from inside a dictionary
 test another test
 ```
 
+MapGetter can also have a `default` value or callable which
+will generate values for each name that one tries to "import" from it:
+
+```
+>>> with MapGetter(default=lambda x: x) as x:
+...    from x import foo, bar, baz
+...
+
+>>> foo
+'foo'
+>>> bar
+'bar'
+>>> baz
+'baz'
+```
+
+If the parameter default is not a callable, it is assigned directly to
+the imported names. If it is a callable, MapGetter will try to call it passing
+each name as the first and only positional parameter. If that fails
+with a type error, it calls it without parameters the way collections.defaultdict
+works.
+
+
 The syntax `from <mydict> import key1 as var1` works as well.
 
 ## BijectiveDict
