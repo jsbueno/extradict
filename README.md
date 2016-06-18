@@ -74,8 +74,8 @@ last on the dictionary order.
 ```
 
 ## MapGetter
-A Context manager that allows one to pick variables from inside a dictionary
-(or mapping) by using the  `from <mydict> import key1, key2` statement.
+A Context manager that allows one to pick variables from inside a dictionary,
+mapping, or any Python object by using the  `from <myobject> import key1, key2` statement.
 
 
 
@@ -87,6 +87,39 @@ A Context manager that allows one to pick variables from inside a dictionary
 ...
 >>> print (b, c)
 test another test
+```
+
+Or:
+```
+>>> from collections import namedtuple
+>>> a = namedtuple("a", "c d")
+>>> b = a(2,3)
+>>> with MapGetter(b):
+...     from b import c, d
+>>> print(c, d)
+2, 3
+```
+
+It works with Python 3.4+ "enum"s - which is great as it allow one
+to use the enums by their own name, without having to prepend the Enum class
+everytime:
+```
+>>> from enum import Enum
+
+>>> class Colors(tuple, Enum):
+...     red = 255, 0, 0
+...     green = 0, 255, 0
+...     blue = 0, 0, 255
+...
+
+>>> with MapGetter(Colors):
+...    from Colors import red, green, blue
+...
+
+>>> red
+<Colors.red: (255, 0, 0)>
+>>> red[0]
+255
 ```
 
 MapGetter can also have a `default` value or callable which

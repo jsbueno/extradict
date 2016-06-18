@@ -128,4 +128,38 @@ def test_mapgetter_works_with_mapping_and_default_parameter():
         from a import b, c, d
     assert b == 1 and c == 2 and d == 'd'
 
+def test_mapgetter_accepts_import_object_attributes():
+    try:
+        from types import SimpleNameSpace
+    except ImportError:
+        class SimpleNameSpace(object):
+            pass
+    test_obj = SimpleNameSpace()
+    test_obj.a = 1
+    test_obj.b = 2
+    with MapGetter(test_obj):
+        from test_obj import a, b
+
+    assert a == test_obj.a
+    assert b == test_obj.b
+
+
+
+try:
+    import enum
+except ImportError:
+    pass
+else:
+    def test_mapgetter_works_with_enums():
+        class A(enum.Enum):
+            foo = 0
+            bar = 1
+            baz = 2
+        with MapGetter(A) as A:
+            from A import foo, bar, baz
+
+        assert foo is A.foo
+        assert bar is A.bar
+        assert baz is A.baz
+        assert foo.value == 0
 

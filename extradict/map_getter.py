@@ -6,13 +6,24 @@ _sentinel = object()
 
 class _PseudoModule(object):
     def __init__(self, mapping, default=_sentinel):
-        self.__dict__ = mapping
+        try:
+            self.__dict__ = mapping
+        except TypeError:
+            self._obj = mapping
+        else:
+            self._obj = _sentinel
         self._default = default
 
     def getlines(self, file):
         return ""
 
     def __getattr__(self, attr):
+        if self._obj is not _sentinel:
+            try:
+                return getattr(self._obj, attr)
+            except AttributeError:
+                if _default is _sentinel:
+                    raise AttributeError("Object '{}' has no attribute '{}' ".format(type(self._obj), attr ))
         if self._default is _sentinel:
             # Try to extract a value from mapping, which could be a
             # defaultdict or some similar mapping:
