@@ -1,0 +1,45 @@
+>>> from extradict import namedtuple
+>>> x = namedtuple("x", "a b")
+>>> x(1, 2) == (1, 2)
+True
+>>> isinstance(x(1,2), tuple)
+True
+>>> len(x(1,2)) == 2
+True
+>>> y = x(1, 2)
+>>> y.a
+1
+>>> y.b
+2
+>>> set(y) == {1,2}
+True
+>>> (y[0], y[1]) == (1, 2)
+True
+>>> x._fields
+('a', 'b')
+>>> y._asdict()
+OrderedDict([('a', 1), ('b', 2)])
+>>> x = namedtuple("x", ("a", "b", "c", "d"))
+>>> x._fields
+('a', 'b', 'c', 'd')
+
+
+>>> from extradict import fastnamedtuple
+>>> x = fastnamedtuple("x", "a b")
+>>> x((1, 2)) == (1, 2)
+True
+>>> isinstance(x((1,2)), tuple)
+True
+>>> len(x((1,2))) == 2
+True
+>>> y = x((1, 2))
+>>> y.a
+1
+>>> y.b
+2
+>>> set(y) == {1,2}
+True
+>>> x._fields
+('a', 'b')
+>>> y._asdict()
+OrderedDict([('a', 1), ('b', 2)])

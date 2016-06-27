@@ -4,10 +4,15 @@ import sys
 
 def namedtuple(name, attrs):
     """
-    Alternate implementation to stdlib's 'namedtuple" that does not
-    make use of "eval" at runtime.
+    Alternate, clean room, implementation of 'namedtuple' as in stdlib's collection.namedtuple
+    . This does not make use of "eval" at runtime - and can be up to 10 times faster to create
+    a namedtuple class than the stdlib version.
 
     Instead, it relies on closures to do its magic.
+
+    However, these will be slower to instantiate tahn stdlib version. The "fastnamedtuple"
+    is faster in all respects, although it holds the same API for instantiating as tuples, and
+    performs no lenght checking.
 
     """
     if isinstance(attrs , str):
@@ -54,16 +59,6 @@ def namedtuple(name, attrs):
     NamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
 
     return NamedTuple
-    #dct = {
-        #"__new__": __new__,
-        #"__slots__": (),
-        #"__getattribute__": __getattribute__,
-        #"_fields": attrs,
-        #"__repr__":__repr__,
-        #"__definition_order__": attrs,
-        #"_asdict": _asdict
-    #}
-    #return type(name, (tuple,), dct)
 
 
 def fastnamedtuple(name, attrs):
