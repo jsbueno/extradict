@@ -1,4 +1,5 @@
 import sys
+from collections import OrderedDict
 
 
 
@@ -72,3 +73,46 @@ def fastnamedtuple(name, attrs):
     delattr (cls, "__new__")
     cls.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
     return cls
+
+
+
+def defaultnamedtuple(_name, _attrs=None, **kw):
+    """
+    Implementation of named-tuple using default parameters -
+    Either pass a sequence of 2-tupes (or an OrderedDict) as the second parameter, or
+    send in kwargs with the default parameters, after the first.
+    (This takes advantadge of python3.6 + guaranteed ordering of **kwargs for a function
+    see https://docs.python.org/3.6/whatsnew/3.6.html)
+
+    """
+    name = _name
+
+    if _attrs:
+        if not isinstance(_attrs , OrderedDict):
+            _attrs = OrderedDict(_attrs)
+        if kw:
+            raise TypeError("'defaultnamedtuple' should be passed either an OrderedDict or named parameters - not both")
+        kw = _attrs
+
+    elif sys.version_info.major < 3 or sys.version_info.major == 3 and sys.version_info.minor <= 6:
+        raise TypeError("'defaultnamedtuple' with kwargs requires at least Python 3.6 - pass an OrderedDict with defaults instead")
+
+    NamedTuple = namedtuple(name, kw.keys())
+
+    class DefaultNamedTuple(NamedTuple):
+        _defaults = kw
+        def __new__(cls, *args, **kw):
+            used = set(cls._fields[:len(args)])
+            if kw:
+                parameters = kw.keys()
+                if used.intersection(parameters):
+                    raise TypeError("__new__() got multiple values for arguments '{}'".format(used.intersection(parameters)))
+                used.update(parameters)
+            args += tuple(kw.get(attrname, cls._defaults[attrname]) for attrname in cls._fields[len(args):])
+
+            return tuple.__new__(cls, args)
+
+    DefaultNamedTuple.__name__ = name
+    DefaultNamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
+
+    return DefaultNamedTuple

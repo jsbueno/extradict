@@ -43,3 +43,14 @@ True
 ('a', 'b')
 >>> y._asdict()
 OrderedDict([('a', 1), ('b', 2)])
+
+>>> from extradict import defaultnamedtuple
+>>> zz = defaultnamedtuple("zz", [("a", 1), ("b", 2), ("c", "3")]    )
+>>> yy = zz()
+>>> yy
+zz(a=1, b=2, c=3)
+>>> yy.a
+1
+>>> yy = zz(b=10)
+>>> yy
+zz(a=1, b=10, c=3)

@@ -176,3 +176,32 @@ Traceback (most recent call last):
 KeyError: 'c'
 >>>
 ```
+
+## namedtuple
+Alternate, clean room, implementation of 'namedtuple' as in stdlib's collection.namedtuple
+. This does not make use of "eval" at runtime - and can be up to 10 times faster to create
+a namedtuple class than the stdlib version.
+
+Instead, it relies on closures to do its magic.
+
+However, these will be slower to instantiate tahn stdlib version. The "fastnamedtuple"
+is faster in all respects, although it holds the same API for instantiating as tuples, and
+performs no lenght checking.
+
+## fastnamedtuple
+Like namedtuple but the class returned take an iterable for its values
+rather than positioned or named parameters. No checks are made towards the iterable
+lenght, which should match the number of attributes
+It is faster for instantiating as compared with stdlib's namedtuple
+
+## defaultnamedtuple
+Implementation of named-tuple using default parameters -
+Either pass a sequence of 2-tupes (or an OrderedDict) as the second parameter, or
+send in kwargs with the default parameters, after the first.
+(This takes advantadge of python3.6 + guaranteed ordering of **kwargs for a function
+see https://docs.python.org/3.6/whatsnew/3.6.html)
+
+The resulting object can accept positional or named parameters to be instantiated, as a
+normal namedtuple, however, any omitted parameters are used from the original
+mapping passed to it.
+
