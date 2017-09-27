@@ -5,12 +5,12 @@ from setuptools import setup
 setup(
     name = 'extradict',
     packages = ['extradict'],
-    version = "0.2.5",
+    version = "0.3",
     license = "LGPLv3+",
     author = "João S. O. Bueno",
     author_email = "gwidion@gmail.com",
     description = "Enhanced, maybe useful, data containers and utilities: A versioned dictionary, a bidirectional dictionary, and an easy extractor from dictionary key/values to variables",
-    keywords = "versioned bijective assigner getter unpack transactional container collection dict dictionary",
+    keywords = "versioned bijective assigner getter unpack transactional container collection dict dictionary normalized",
     py_modules = ['extradict'],
     url = 'https://github.com/jsbueno/extradict',
     long_description = open('README.md').read(),
@@ -18,7 +18,6 @@ setup(
     classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",

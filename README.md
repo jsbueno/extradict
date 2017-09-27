@@ -188,11 +188,13 @@ However, these will be slower to instantiate tahn stdlib version. The "fastnamed
 is faster in all respects, although it holds the same API for instantiating as tuples, and
 performs no lenght checking.
 
+
 ## fastnamedtuple
 Like namedtuple but the class returned take an iterable for its values
 rather than positioned or named parameters. No checks are made towards the iterable
 lenght, which should match the number of attributes
 It is faster for instantiating as compared with stdlib's namedtuple
+
 
 ## defaultnamedtuple
 Implementation of named-tuple using default parameters -
@@ -205,3 +207,26 @@ The resulting object can accept positional or named parameters to be instantiate
 normal namedtuple, however, any omitted parameters are used from the original
 mapping passed to it.
 
+
+## FallbackNormalizedDict
+Dictionary meant for text only keys:
+will normalize keys in a way that capitalization, whitespace and
+punctuation will be ignored when retrieving items.
+
+A parallel dictionary is maintained with the original keys,
+so that strings that would clash on normalization can still
+be used as separated key/value pairs if original punctuation
+is passed in the key.
+
+Primary use case if for keeping translation strings when the source
+for the original strings is loose in terms of whitespace/punctuation
+(for example, in an http snippet)
+
+
+## NormalizedDict
+Dictionary meant for text only keys:
+will normalize keys in a way that capitalization, whitespace and
+punctuation will be ignored when retrieving items.
+
+Unlike FallbackNormalizedDict this does not keep the original
+version of the keys.
