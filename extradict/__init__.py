@@ -11,5 +11,5 @@ from .extratuple import fastnamedtuple
 
 
 __author__ = "João S. O. Bueno"
-__version__ = "0.3"
+__version__ = "0.3.1"
 

@@ -14,14 +14,38 @@ import re
 import unicodedata
 
 
-def normalize(text):
-    return re.sub(r"\W" ,"", unicodedata.normalize("NFKD", text)).lower()
+# Normalizer pipeline functions:
+
+strip_replacer = lambda text: re.sub(r"\W", "", text)
+unicode_normalizer = lambda text: unicodedata.normalize("NFKD", text)
+case_normalizer = str.lower
+
+
+class Normalizer:
+    """Contains the standard normalizer method.
+
+    It is used as a mixin for the NormalizedDict classes -
+    the idea of having this is a class method is to make it possible
+    to override the normalizer pipeline (or method) with a custom implementation through
+    inheritance or simply  method attribution in the derived classes.
+
+    """
+
+    # Default pipeline decomposes any diactrics,
+    # strips everything that is non alphanumeric
+    # puts everything in lower case:
+    pipeline = [unicode_normalizer, strip_replacer, case_normalizer]
+
+    def normalize(self, text):
+        for stage in self.pipeline:
+            text = stage(text)
+        return text
 
 
 SENTINEL = object()
 
 
-class FallbackNormalizedDict(MutableMapping):
+class FallbackNormalizedDict(MutableMapping, Normalizer):
     """Dictionary meant for text only keys:
     will normalize keys in a way that capitalization, whitespace and
     punctuation will be ignored when retrieving items.
@@ -38,17 +62,17 @@ class FallbackNormalizedDict(MutableMapping):
 
     def __init__(self, *args, **kw):
         self.literal = dict(*args, **kw)
-        self.normalized = {normalize(key): value for key, value in self.literal.items()}
+        self.normalized = {self.normalize(key): value for key, value in self.literal.items()}
 
     def __getitem__(self, key):
         result = self.literal.get(key, SENTINEL)
         if result != SENTINEL:
             return result
-        return self.normalized[normalize(key)]
+        return self.normalized[self.normalize(key)]
 
     def __setitem__(self, key, value):
         self.literal[key] = value
-        self.normalized[normalize(key)] = value
+        self.normalized[self.normalize(key)] = value
 
     def __delitem__(self, key):
         raise NotImplementedError("""Deleting from FallbackNormalizedDict is not implemented""")
@@ -69,7 +93,7 @@ class FallbackNormalizedDict(MutableMapping):
         )
 
 
-class NormalizedDict(MutableMapping):
+class NormalizedDict(MutableMapping, Normalizer):
     """Dictionary meant for text only keys:
     will normalize keys in a way that capitalization, whitespace and
     punctuation will be ignored when retrieving items.
@@ -80,19 +104,16 @@ class NormalizedDict(MutableMapping):
     """
 
     def __init__(self, *args, **kw):
-        self.normalized = {normalize(key): value for key, value in dict(*args, **kw).items()}
+        self.normalized = {self.normalize(key): value for key, value in dict(*args, **kw).items()}
 
     def __getitem__(self, key):
-        result = self.normalized.get(normalize(key), SENTINEL)
-        if result is SENTINEL:
-            raise KeyError("KeyError: '{}'".format(key))
-        return result
+        return self.normalized[self.normalize(key)]
 
     def __setitem__(self, key, value):
-        self.normalized[normalize(key)] = value
+        self.normalized[self.normalize(key)] = value
 
     def __delitem__(self, key):
-        del self.normalized[normalize(key)]
+        del self.normalized[self.normalize(key)]
 
     def __iter__(self):
         return self.normalized.__iter__()

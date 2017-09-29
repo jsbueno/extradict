@@ -10,6 +10,14 @@ def test_normalized_works():
     assert a["maca"] == 1
 
 
+def test_normalized_doesnot_strip_numbers():
+    a = NormalizedDict(maçã123=1)
+    assert a["maca123"]
+    with pytest.raises(KeyError):
+        a["maca"]
+        a["maca567"]
+
+
 def test_fallbacknormalized_works():
     a = FallbackNormalizedDict(maçã=1)
     assert a["maçã"] == 1
@@ -35,3 +43,35 @@ def test_fallbacknormalized_does_not_allow_deleting():
     a = FallbackNormalizedDict(maçã=1)
     with pytest.raises(NotImplementedError):
         del a["maca"]
+
+# strip_replacer = lambda text: re.sub(r"\W", "", text)
+# unicode_normalizer = lambda text: unicodedata.normalize("NFKD", text)
+# case_normalizer = str.lower
+
+def test_node_strip_replacer():
+    from extradict.normalized_dict import strip_replacer
+    assert strip_replacer("-1a ") == "1a"
+    assert strip_replacer("-1aµ ") == "1aµ"
+    assert strip_replacer("a") == "a"
+    assert strip_replacer("á") != "a"
+    assert strip_replacer("A") != "a"
+
+
+def test_node_unicode_normalizer():
+    from extradict.normalized_dict import unicode_normalizer
+    assert unicode_normalizer("á") == "\u0061\u0301"
+
+
+def test_node_case_normalizer():
+    from extradict.normalized_dict import case_normalizer
+    assert case_normalizer("PyThOn") == "python"
+
+
+def test_normalized_dict_can_be_customized():
+    import re
+
+    a = NormalizedDict()
+    a.pipeline = a.pipeline.copy()
+    a.pipeline[1] = lambda text: re.sub("[^A-Za-z]", "", text)
+    a["maçã123"] = 1
+    assert a["567maca"] == 1
