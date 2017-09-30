@@ -54,6 +54,26 @@ class MapGetter(object):
     >>> print((b, c))
     (1, 2)
 
+    It is intesresting to note that it will work for ordinary attributes
+    from Python objects, and, as well, for constant names inside a Python
+    enum.Enum class. That may be the major use case of this:
+
+    In[1]: import enum
+    In [2]: from extradict import MapGetter
+
+    In 43]: class Colors(enum.Enum):
+        ...:     RED = 1, 0, 0
+        ...:     GREEN = 0, 1, 0
+        ...:     BLUE = 0, 0, 1
+        ...:
+
+    In [4]: with MapGetter(Colors):
+        ...:     from Colors import RED, GREEN, BLUE
+        ...:
+
+    In [5]: RED, GREEN, BLUE
+    Out[5]: (<Colors.RED: (1, 0, 0)>, <Colors.GREEN: (0, 1, 0)>, <Colors.BLUE: (0, 0, 1)>)
+
 
     """
     def __init__(self, mapping=None, default=_sentinel):
