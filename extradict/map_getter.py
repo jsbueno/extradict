@@ -96,6 +96,9 @@ class MapGetter(object):
         # makes it worth to keep this implementation using a __import__ monkey patch -
         # no other func gets "from_list" and all the machinery expects the actual
         # module to be created on sys.modules - which we don't want.
+
+        # FIXME: Make this asyncio safe as well.
+        # (May wait for Python 3.7 with PEP-555 implemented)
         if threading.current_thread() != self._thread or sys._getframe().f_back.f_locals.get(name, None) is not self.mapping:
             return self.original_import(name, globals_, locals_, from_list, level)
         return _PseudoModule(self.mapping, self.default)
