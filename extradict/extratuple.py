@@ -1,7 +1,9 @@
 import sys
 from collections import OrderedDict
 
+from collections.abc import Mapping
 
+_py36 = sys.version_info.major >= 3 and sys.version_info.minor >= 6
 
 def namedtuple(name, attrs):
     """
@@ -23,6 +25,8 @@ def namedtuple(name, attrs):
     _field_order  = {field: i for i, field in enumerate(attrs)}
 
     class NamedTuple(tuple):
+        __slots__ = ()
+
         def __getattribute__(self, attr):
             n = _field_order.get(attr, None)
             if n is not None:
@@ -51,13 +55,12 @@ def namedtuple(name, attrs):
             return "{}({})".format(self.__class__.__name__, ", ".join("{}={}".format(name, value) for name, value in zip(self._fields, self)))
 
         def _asdict(self):
-            from collections import OrderedDict
             return OrderedDict((key, value) for key, value in zip(self._fields, self))
 
         _fields = __definition_order__ = attrs
 
     NamedTuple.__name__ = name
-    NamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
+    NamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
 
     return NamedTuple
 
@@ -71,7 +74,7 @@ def fastnamedtuple(name, attrs):
     """
     cls = namedtuple(name, attrs)
     delattr (cls, "__new__")
-    cls.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
+    cls.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
     return cls
 
 
@@ -88,18 +91,24 @@ def defaultnamedtuple(_name, _attrs=None, **kw):
     name = _name
 
     if _attrs:
-        if not isinstance(_attrs , OrderedDict):
-            _attrs = OrderedDict(_attrs)
+        if not isinstance(_attrs , Mapping):
+            if not _py36 and type(_attrs) is dict:
+                raise TypeError("'defaultnamedtuple' can't work with unordered dicts prior to Python 3.6")
+            elif not _py36:
+                _attrs = OrderedDict(_attrs)
+            else:
+                _attrs = dict(_attrs)
         if kw:
-            raise TypeError("'defaultnamedtuple' should be passed either an OrderedDict or named parameters - not both")
+            raise TypeError("'defaultnamedtuple' should be passed either a dict or named parameters - not both")
         kw = _attrs
 
-    elif sys.version_info.major < 3 or sys.version_info.major == 3 and sys.version_info.minor <= 6:
+    elif not _py36:
         raise TypeError("'defaultnamedtuple' with kwargs requires at least Python 3.6 - pass an OrderedDict with defaults instead")
 
     NamedTuple = namedtuple(name, kw.keys())
 
     class DefaultNamedTuple(NamedTuple):
+        __slots__=()
         _defaults = kw
         def __new__(cls, *args, **kw):
             used = set(cls._fields[:len(args)])
@@ -113,6 +122,6 @@ def defaultnamedtuple(_name, _attrs=None, **kw):
             return tuple.__new__(cls, args)
 
     DefaultNamedTuple.__name__ = name
-    DefaultNamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__"), name))
+    DefaultNamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
 
     return DefaultNamedTuple

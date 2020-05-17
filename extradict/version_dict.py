@@ -50,6 +50,10 @@ class VersionDict(MutableMapping):
         return new
 
     def freeze(self, version=None):
+        """Create a shallow copy of an specific version
+        of the dictionary. If version is not given, creates
+        a shallow copy of the current version.
+        """
         new = self._dictclass()
         if version is None:
             version = self.version
