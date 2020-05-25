@@ -8,13 +8,14 @@ that allows one to know wether a dictionary had  changed.
 
 """
 
+import threading
+from collections import namedtuple, OrderedDict
+from copy import copy
+
 try:
     from collections.abc import MutableMapping
 except ImportError:
     from collections import MutableMapping
-
-from collections import namedtuple, OrderedDict
-import threading
 
 
 VersionedValue = namedtuple("VersionedValue", "version value")
@@ -24,17 +25,17 @@ _Deleted = object()
 
 class VersionDict(MutableMapping):
     _dictclass = dict
+
     def __init__(self, *args, **kw):
         self._version = 0
         initial = self._dictclass(*args, **kw)
         self.data = self._dictclass()
         for key, value in initial.items():
             self.data[key] = [VersionedValue(self._version, value)]
-        self.local= threading.local()
+        self.local = threading.local()
         self.local._updating = False
 
     def copy(self, version=None):
-        from copy import copy
         new = VersionDict.__new__(self.__class__)
         if version is None or version >= self.version:
             new._version = self._version
@@ -43,7 +44,9 @@ class VersionDict(MutableMapping):
             new._version = version
             new.data = self._dictclass()
             for key, value in self.data.items():
-                new_values = [value_item for value_item in value if value_item.version <= version]
+                new_values = [
+                    value_item for value_item in value if value_item.version <= version
+                ]
                 if new_values:
                     new.data[key] = new_values
 
@@ -76,7 +79,6 @@ class VersionDict(MutableMapping):
             finally:
                 self.local._updating = False
 
-
     def get(self, item, default=_Deleted, version=None):
         """
             VersionedDict.get(item, default=None) -> same as dict.get
@@ -86,7 +88,9 @@ class VersionDict(MutableMapping):
                 raises KeyError (unlike regular dict)
         """
         if version is None:
-            return super(VersionDict, self).get(item, default=(None if default is _Deleted else default))
+            return super(VersionDict, self).get(
+                item, default=(None if default is _Deleted else default)
+            )
         try:
             values = self.data[item]
             i = -1
@@ -136,7 +140,7 @@ class VersionDict(MutableMapping):
         return "<{}({}) at version {}>".format(
             self.__class__.__name__,
             ", ".join("{}={!r}".format(*item) for item in self.items()),
-            self.version
+            self.version,
         )
 
 
@@ -147,7 +151,7 @@ class OrderedVersionDict(VersionDict):
         new = self._dictclass()
         if version is None:
             version = self.version
-        # Making a verioned copy instead of iterating on self.data preserves
+        # Making a versioned copy instead of iterating on self.data preserves
         # order semantics for OrderedVersionDict
         for key, value in self.copy(version).items():
             new[key] = value
