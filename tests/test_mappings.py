@@ -1,4 +1,10 @@
-from extradict import VersionDict,OrderedVersionDict, FallbackNormalizedDict, NormalizedDict, BijectiveDict
+from extradict import (
+    VersionDict,
+    OrderedVersionDict,
+    FallbackNormalizedDict,
+    NormalizedDict,
+    BijectiveDict,
+)
 
 import pytest
 
@@ -7,11 +13,20 @@ import pytest
 Tests for normal mapping usage - as in plain get/set elements, etc
 """
 
+
 def all_mappings(func):
     return pytest.mark.parametrize(
         "cls",
-        [dict, VersionDict, OrderedVersionDict, FallbackNormalizedDict, NormalizedDict, BijectiveDict]
+        [
+            dict,
+            VersionDict,
+            OrderedVersionDict,
+            FallbackNormalizedDict,
+            NormalizedDict,
+            BijectiveDict,
+        ],
     )(func)
+
 
 @all_mappings
 def test_instantiates_empty(cls):
@@ -26,6 +41,7 @@ def test_creates_single_key_value_pair(cls):
     inst["key"] = "pair"
     assert inst["key"] == "pair"
     assert "key" in inst
+
 
 @all_mappings
 def test_creates_several_key_value_pairs(cls):
