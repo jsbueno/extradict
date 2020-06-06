@@ -23,11 +23,15 @@ class EmptyNode:
     def __str__(self):
         return ""
 
+    def __iter__(self):
+        return iter(())
+
     def get(self):
         raise KeyError(key)
 
     def delete(self, key):
         raise KeyError(key)
+
 
 EmptyNode = EmptyNode()  # The KISS Singleton
 
@@ -54,12 +58,12 @@ class PlainNode:
         if new_key == self_key and replace:
             self.value = value if value is not _empty else key
             return
-        bin_name = "left" if new_key < self_key else "right"
-        bin = getattr(self, bin_name)
-        if bin:
-            bin.insert(key, value, replace)
+        target_str = "left" if new_key < self_key else "right"
+        target = getattr(self, target_str)
+        if target:
+            target.insert(key, value, replace)
         else:
-            setattr(self, bin_name, type(self)(key=key, value=value, key_func=self.key_func))
+            setattr(self, target_str, type(self)(key=key, value=value, key_func=self.key_func))
 
     def get(self, key):
         self_key = self._cmp_key(self.key)
@@ -69,7 +73,6 @@ class PlainNode:
         elif new_key > self_key:
             return self.right.get(key)
         return self.left.get(key)
-
 
     @property
     def depth(self):
@@ -97,6 +100,11 @@ class PlainNode:
 
         setattr(self, target_str, target.delete(key))
         return self
+
+    def __iter__(self):
+        yield from self.left
+        yield self
+        yield from self.right
 
     def __len__(self):
         return 1 + len(self.left) + len(self.right)

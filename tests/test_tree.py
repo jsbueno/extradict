@@ -229,3 +229,10 @@ def test_node_insert_can_create_new():
     assert n.get(5).value == "five"  # Retrieves first inserted value
     assert len(n) == 4
     assert n.get(5).right.left.value == "fake"
+
+def test_node_iter():
+    n = PlainNode(0)
+    n.insert(5)
+    n.insert(-5)
+    n.insert(-3)
+    assert [x.value for x in n] == [-5, -3, 0, 5]
