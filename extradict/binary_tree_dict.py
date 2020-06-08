@@ -10,6 +10,7 @@ _empty = object()
 class EmptyNode:
     __slots__ = ()
     depth = 0
+    value = None
 
     def __bool__(self):
         return False
@@ -26,11 +27,13 @@ class EmptyNode:
     def __iter__(self):
         return iter(())
 
-    def get(self):
+    def get(self, key):
         raise KeyError(key)
 
     def delete(self, key):
         raise KeyError(key)
+
+
 
 
 EmptyNode = EmptyNode()  # The KISS Singleton
@@ -74,6 +77,33 @@ class PlainNode:
             return self.right.get(key)
         return self.left.get(key)
 
+    def get_closest(self, key, path=None):
+        if path is None:
+            path = []
+        path.append(self)
+        self_key = self._cmp_key(self.key)
+        new_key = self._cmp_key(key)
+        if self_key == new_key:
+            return self, self
+        elif new_key > self_key:
+            if self.right:
+                return self.right.get_closest(key, path)
+            return self, self._get_closest_ancestor_on_other_side(path, side="right")
+        if self.left:
+            return self.left.get_closest(key, path)
+        return self._get_closest_ancestor_on_other_side(path, side="left"), self
+
+    def _get_closest_ancestor_on_other_side(self, path, side):
+        # backtrack up to detour
+        index = len(path) - 1
+        while True:
+            index -= 1
+            if index < 0:
+                return EmptyNode
+            side_of_child = "same" if getattr(path[index], side) is path[index + 1] else "other"
+            if side_of_child == "other":
+                return path[index]
+
     @property
     def depth(self):
         return max(self.left.depth, self.right.depth) + 1
@@ -115,7 +145,7 @@ class AVLNode(PlainNode):
 
 
 class TreeDict(MutableMapping):
-    """Implements an AVLTree auto=balancing tree with a Python Mapping interface"""
+    """Implements an AVLTree autobalancing tree with a Python Mapping interface"""
     node_cls = AVLNode
 
     def __init__(self, *args, key=None):

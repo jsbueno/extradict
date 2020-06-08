@@ -199,6 +199,47 @@ def test_node_get_branch_value():
     assert n.get(5).value == "five"
 
 
+def test_node_get_non_existing_element_raises_keyerror():
+    n = PlainNode(0)
+    n.insert(5)
+    n.insert(10)
+    n.insert(7)
+    with pytest.raises(KeyError) as error:
+        n.get(8)
+    assert True
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "search_value", "expected_return_values"], [
+        ((0,), 0, (0, 0)),
+        ((0,), 1, (0, None)),
+        ((0,), -2, (None, 0)),
+        ((0,5), 2, (0, 5)),
+        ((0, 5, 3), 2, (0, 3)),
+        ((0, 5, 3), 3, (3, 3)),
+        ((0, 5, 3), 3.5, (3, 5)),
+        ((0, 5, 10, 7), 6, (5, 7)),
+        ((0, 5, 10, 7), 8, (7, 10)),
+        ((0, 5, 10, 7), 7, (7, 7)),
+        ((0, 5, 15, 20, 10, 12, 13), 14, (13, 15)),
+        ((0, -5, -3), 2, (0, None)),
+        ((0, -5, -3, -4, -4.5), -4.2, (-4.5, -4)),
+])
+def test_node_get_non_existing_element_returns_path_to_closest(
+    nodes_to_insert,
+    search_value,
+    expected_return_values
+):
+    values = iter(nodes_to_insert)
+    n = PlainNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    closest_nodes = n.get_closest(search_value)
+
+    assert closest_nodes[0].value == expected_return_values[0]
+    assert closest_nodes[1].value == expected_return_values[1]
+
+
 def test_node_get_identity_or_value_independs_other_nodes():
     n = PlainNode(0, "zero")
     n.insert(5)
@@ -229,6 +270,7 @@ def test_node_insert_can_create_new():
     assert n.get(5).value == "five"  # Retrieves first inserted value
     assert len(n) == 4
     assert n.get(5).right.left.value == "fake"
+
 
 def test_node_iter():
     n = PlainNode(0)
