@@ -185,6 +185,8 @@ class PlainNode:
 
 
 class AVLNode(PlainNode):
+    __slots__ = ()
+
     def insert(self, key, value=_empty, replace=True):
         super().insert(key, value, replace)
         self.balance()
