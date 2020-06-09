@@ -40,13 +40,15 @@ EmptyNode = EmptyNode()  # The KISS Singleton
 
 
 class PlainNode:
-    __slots__ = "key value left right key_func".split()
+    __slots__ = "key value _left _right key_func _len _depth".split()
     def __init__(self, key, value=_empty, left=EmptyNode, right=EmptyNode, key_func=None):
         self.key = key
         self.value = value if value != _empty else key
         self.left = left
         self.right = right
         self.key_func = None
+        self._depth = 1
+        self._len = 1
 
     @property
     def leaf(self):
@@ -67,6 +69,8 @@ class PlainNode:
             target.insert(key, value, replace)
         else:
             setattr(self, target_str, type(self)(key=key, value=value, key_func=self.key_func))
+        self._update_depth()
+        self._update_len()
 
     def get(self, key):
         self_key = self._cmp_key(self.key)
@@ -104,9 +108,33 @@ class PlainNode:
             if side_of_child == "other":
                 return path[index]
 
+    def _update_depth(self):
+        self._depth = max(self.left.depth, self.right.depth) + 1
+
     @property
     def depth(self):
-        return max(self.left.depth, self.right.depth) + 1
+        return self._depth
+
+    @property
+    def right(self):
+        return getattr(self, "_right", EmptyNode)
+
+    @right.setter
+    def right(self, value):
+        self._right = value
+        self._update_depth()
+        self._update_len()
+
+    @property
+    def left(self):
+        return getattr(self, "_left", EmptyNode)
+
+    @left.setter
+    def left(self, value):
+        self._left = value
+        self._update_depth()
+        self._update_len()
+
 
     def _mute_into(self, other, full=False):
         self.key = other.key
@@ -132,6 +160,8 @@ class PlainNode:
             target = getattr(self, target_str)
 
         setattr(self, target_str, target.delete(key))
+        self._update_depth()
+        self._update_len()
         return self
 
     def __iter__(self):
@@ -139,8 +169,11 @@ class PlainNode:
         yield self
         yield from self.right
 
+    def _update_len(self):
+        self._len = 1 + len(self.left) + len(self.right)
+
     def __len__(self):
-        return 1 + len(self.left) + len(self.right)
+        return self._len
 
     @property
     def balanced(self):
@@ -148,16 +181,6 @@ class PlainNode:
 
     def __repr__(self):
         return f"{self.key}, ({repr(self.left) if self.left else ''}, {repr(self.right) if self.right else ''})"
-
-    #def __repr__(self):
-        #left = repr(self.left).split("\\n") if self.left else [""]
-        #right = repr(self.right).split("\\n") if self.right else [""]
-        #max_left = max(len(line) for line in left)
-        #max_right = max(len(line) for line in right)
-        #merged = [left_part.strip().center(max_left) + "   " + right_part.strip().center(max_right) for left_part, right_part in zip_longest(left, right, fillvalue="")]
-        #width = len(left[0]) + len(right[0]) + 3
-        #own = f"{{:^{width}}}".format(repr(self.key))
-        #return "\n".join([own] + merged)
 
 
 
@@ -174,6 +197,8 @@ class AVLNode(PlainNode):
             self._avl_rotate_right()
         else:
             self._avl_rotate_left()
+        self._update_depth()
+        self._update_len()
 
     def _avl_rotate_left(self):
         new_parent = self.right
@@ -189,16 +214,6 @@ class AVLNode(PlainNode):
         new_parent.right = new_self
         self._mute_into(new_parent, full=True)
 
-    #def _avl_rotate_right(self):
-        #new_parent = self.left.left
-        #new_self = copy(self)
-        #new_self.left.left = new_parent.right
-        #new_parent.right = new_self
-        #self._mute_into(new_parent)
-
-
-
-    # Delete on PlainNode is already auto-balancing
 
 
 class TreeDict(MutableMapping):
