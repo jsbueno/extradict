@@ -1,4 +1,4 @@
-from extradict.binary_tree_dict import PlainNode
+from extradict.binary_tree_dict import PlainNode, AVLNode
 import pytest
 
 
@@ -278,3 +278,48 @@ def test_node_iter():
     n.insert(-5)
     n.insert(-3)
     assert [x.value for x in n] == [-5, -3, 0, 5]
+
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "expected"],[
+        [(0,), True],
+        [(0, 1,), True],
+        [(0, 1, 2,), True],
+        [(0, 1, 2, 3), False],
+        [(0, 10, 20, 25), False],
+        [(0, 10, 20, 25, -10), True],
+        [(0, 10, 20, 25, -10, -20), True],
+        [(0, 10, 20, 25, -10, -20, -30), True],
+        [(0, 10, 20, 25, -10, -20, -30, -40), True],
+        [(0, 10, 20, 25, -10, -20, -30, -40, -50, -60), False],
+])
+def test_node_reports_balanced(nodes_to_insert, expected):
+    values = iter(nodes_to_insert)
+    n = PlainNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    assert n.balanced == expected
+
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "expected_root"],[
+        [(0,), 0],
+        [(0, 1, 2,), 1],
+        [(0, 1, 2, 3), 1],
+        [(0, 10, 20, 25), 10],
+        [(0, -10, -20, -30), -10],
+        [(0, -10, -20, -15, -30), -10],
+        [(0, 10, 20, -10, 25), 10],
+        [(0, 10, 20, -10, -20, -30, -40, 25), -10],
+        [(0, 10, 20, -10, -20, -30, -40, -50, -60, -70, -80, -90, 25), -50],
+])
+def test_avlnode_always_balanced(nodes_to_insert, expected_root):
+    values = iter(nodes_to_insert)
+    n = AVLNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    assert [node.value for node in n] == sorted(nodes_to_insert)
+    assert n.value == expected_root
+    assert n.balanced

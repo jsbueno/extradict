@@ -1,4 +1,6 @@
 from collections.abc import MutableMapping
+from copy import copy
+from itertools import zip_longest
 
 
 """Implements an AVLTree auto=balancing tree with a Python Mapping interface"""
@@ -32,8 +34,6 @@ class EmptyNode:
 
     def delete(self, key):
         raise KeyError(key)
-
-
 
 
 EmptyNode = EmptyNode()  # The KISS Singleton
@@ -108,10 +108,13 @@ class PlainNode:
     def depth(self):
         return max(self.left.depth, self.right.depth) + 1
 
-    def _mute_into(self, other):
+    def _mute_into(self, other, full=False):
         self.key = other.key
         self.value = other.value
         self.key_func = other.key_func
+        if full:
+            self.right = other.right
+            self.left = other.left
 
     def delete(self, key):
         self_key = self._cmp_key(self.key)
@@ -139,9 +142,63 @@ class PlainNode:
     def __len__(self):
         return 1 + len(self.left) + len(self.right)
 
+    @property
+    def balanced(self):
+        return abs(self.left.depth - self.right.depth) <= 1
+
+    def __repr__(self):
+        return f"{self.key}, ({repr(self.left) if self.left else ''}, {repr(self.right) if self.right else ''})"
+
+    #def __repr__(self):
+        #left = repr(self.left).split("\\n") if self.left else [""]
+        #right = repr(self.right).split("\\n") if self.right else [""]
+        #max_left = max(len(line) for line in left)
+        #max_right = max(len(line) for line in right)
+        #merged = [left_part.strip().center(max_left) + "   " + right_part.strip().center(max_right) for left_part, right_part in zip_longest(left, right, fillvalue="")]
+        #width = len(left[0]) + len(right[0]) + 3
+        #own = f"{{:^{width}}}".format(repr(self.key))
+        #return "\n".join([own] + merged)
+
+
 
 class AVLNode(PlainNode):
-    pass
+    def insert(self, key, value=_empty, replace=True):
+        super().insert(key, value, replace)
+        self.balance()
+
+    def balance(self):
+        if self.balanced:
+            return
+
+        if self.left.depth > self.right.depth:
+            self._avl_rotate_right()
+        else:
+            self._avl_rotate_left()
+
+    def _avl_rotate_left(self):
+        new_parent = self.right
+        new_self = copy(self)
+        new_self.right = new_parent.left
+        new_parent.left = new_self
+        self._mute_into(new_parent, full=True)
+
+    def _avl_rotate_right(self):
+        new_parent = self.left
+        new_self = copy(self)
+        new_self.left = new_parent.right
+        new_parent.right = new_self
+        self._mute_into(new_parent, full=True)
+
+    #def _avl_rotate_right(self):
+        #new_parent = self.left.left
+        #new_self = copy(self)
+        #new_self.left.left = new_parent.right
+        #new_parent.right = new_self
+        #self._mute_into(new_parent)
+
+
+
+    # Delete on PlainNode is already auto-balancing
 
 
 class TreeDict(MutableMapping):
