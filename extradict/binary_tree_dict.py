@@ -199,8 +199,6 @@ class AVLNode(PlainNode):
             self._avl_rotate_right()
         else:
             self._avl_rotate_left()
-        self._update_depth()
-        self._update_len()
 
     def _avl_rotate_left(self):
         new_parent = self.right
