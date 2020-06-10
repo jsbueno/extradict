@@ -1,4 +1,4 @@
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from copy import copy
 from itertools import zip_longest
 
@@ -63,7 +63,10 @@ class PlainNode:
         if new_key == self_key and replace:
             self.value = value if value is not _empty else key
             return
-        target_str = "left" if new_key < self_key else "right"
+        try:
+            target_str = "left" if new_key < self_key else "right"
+        except TypeError as error:
+            raise KeyError(f"{key} type incompatible with other keys in the tree")
         target = getattr(self, target_str)
         if target:
             target.insert(key, value, replace)
@@ -75,11 +78,37 @@ class PlainNode:
     def get(self, key):
         self_key = self._cmp_key(self.key)
         new_key = self._cmp_key(key)
+
         if self_key == new_key:
             return self
-        elif new_key > self_key:
-            return self.right.get(key)
-        return self.left.get(key)
+        try:
+            new_key_smaller = new_key < self_key
+        except TypeError as error:
+            raise KeyError(f"{key} type incompatible with other keys in the tree")
+
+        if new_key_smaller:
+            return self.left.get(key)
+        return self.right.get(key)
+
+    def get_node_path(self, key, path=None):
+        """Retrieve a list of nodes down to the node with the given Key.
+
+        If the key does not exist, the last element is set to EmptyNode
+        """
+        if path is None:
+            path = []
+        path.append(self)
+        self_key = self._cmp_key(self.key)
+        new_key = self._cmp_key(key)
+        if self_key == new_key:
+            return path
+        if new_key < self_key:
+            if self.left:
+                return self.left.get_node_path(key, path)
+        elif self.right:
+            return self.right.get_node_path(key, path)
+        path.append(EmptyNode)
+        return path
 
     def get_closest(self, key, path=None):
         if path is None:
@@ -217,19 +246,43 @@ class AVLNode(PlainNode):
 
 
 class TreeDict(MutableMapping):
-    """Implements an AVLTree autobalancing tree with a Python Mapping interface"""
+    """Implements an AVLTree autobalancing tree with a Python Mapping interface.
+
+
+    It can be used as a normal dictionary, although it will be much less eficient
+    than a native dict.  Key types must not be mixed, or one will get a KeyError.
+
+    The constructor does not accept key/value pairs to be created
+    as dictionary members - pass a plain dictionary as first argument
+    should be passed if that is needed.
+
+    The keyword arg "key" to the constructor can take a callable analog to the
+    "key" argument to "sorted" and "list.sort": it will
+    accept one parameter and will be passed the insert/search
+    key on all insertions and retrievals. Thus the internal
+    order of the underlying tree can be fully customized.
+
+    Having an inner AVL tree and a custom key function,  extra
+    features are that `__getitem__` can retrieve a range of itens,
+    and `get_closest` will return a tuple of surrounding keys that exist.
+
+    """
     node_cls = AVLNode
 
     def __init__(self, *args, key=None):
         self.key = key
         self.root = None
+        if len(args) == 1 and isinstance(args[0], Mapping):
+            args = args[0].items()
         for key, value in args:
             self[key] = value
 
     def __getitem__(self, key):
         if not self.root:
             raise KeyError(key)
-        self.root.get(key).value
+        if isinstance(key, slice):
+            return self._getslice(key)
+        return self.root.get(key).value
 
     def __setitem__(self, key, value):
         if self.root is None:
@@ -240,10 +293,25 @@ class TreeDict(MutableMapping):
     def __delitem__(self, key):
         if not self.root:
             raise KeyError(key)
-        self.root.delete(key)
+        if len(self.root) == 1:
+            self.root = None
+        else:
+            self.root.delete(key)
+
+    def get_closest(self, key):
+        if not self.root:
+            return None, None
+        parent1, parent2 = self.root.get_closest(key)
+        ret_values = (parent1.key if parent1 else None), (parent2.key if parent2 else None)
+
+    def _get_slice(self, slice_):
+        start, _ = self.root.get_closest(slice_.start)
+        _, stop = self.root.get_closest(slice_.stop)
+        step = slice_.step or 1
+
 
     def __iter__(self):
-        return (n.value for n in self.root) if self.root else iter(())
+        return (n.key for n in self.root) if self.root else iter(())
 
     def __len__(self):
         return len(self.root) if self.root else 0

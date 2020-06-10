@@ -323,3 +323,22 @@ def test_avlnode_always_balanced(nodes_to_insert, expected_root):
     assert [node.value for node in n] == sorted(nodes_to_insert)
     assert n.value == expected_root
     assert n.balanced
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "key", "expected"],[
+        [(0, 4, 2, 1, 3), 3, (0, 4, 2, 3)],
+        [(0, 4, 2, 1, 3), 0, (0,)],
+        [(0, 4, 2, 1, 3), 4, (0, 4)],
+        [(0, 4, 2, 1, 3), 3.5, (0, 4, 2, 3, None)],
+        [(0, 4, 2, 1, 3), 0.5, (0, 4, 2, 1, None)],
+        [(0, -4, -2), -2, (0, -4, -2)],
+        [(0, -4, -2), -2.5, (0, -4, -2, None)],
+])
+def test_get_node_path_works(nodes_to_insert, key, expected):
+    values = iter(nodes_to_insert)
+    n = PlainNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    result = [node.value for node in n.get_node_path(key)]
+    assert result == list(expected)
