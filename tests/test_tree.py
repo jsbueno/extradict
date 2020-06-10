@@ -324,6 +324,7 @@ def test_avlnode_always_balanced(nodes_to_insert, expected_root):
     assert n.value == expected_root
     assert n.balanced
 
+
 @pytest.mark.parametrize(
     ["nodes_to_insert", "key", "expected"],[
         [(0, 4, 2, 1, 3), 3, (0, 4, 2, 3)],

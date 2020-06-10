@@ -4,6 +4,7 @@ from extradict import (
     FallbackNormalizedDict,
     NormalizedDict,
     BijectiveDict,
+    TreeDict
 )
 
 import pytest
@@ -24,6 +25,7 @@ def all_mappings(func):
             FallbackNormalizedDict,
             NormalizedDict,
             BijectiveDict,
+            TreeDict
         ],
     )(func)
 
@@ -75,3 +77,15 @@ def test_pop(cls):
     inst.pop("key")
     assert not "key" in inst
     assert not inst
+
+
+@all_mappings
+def test_dict_round_trip(cls):
+    # 'NormalizedDict' would not round trip strings that would be have a different normal form
+    # but that is no the  object of this test
+    if cls in (BijectiveDict,):
+        return
+    test = {"a": 1, "b": 2, "c": 3, "d": 4}
+    inst = cls(test.copy())
+
+    assert dict(inst) == test

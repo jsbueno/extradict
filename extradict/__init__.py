@@ -8,7 +8,7 @@ from .reciprocal_dict import BijectiveDict
 from .extratuple import namedtuple
 from .extratuple import defaultnamedtuple
 from .extratuple import fastnamedtuple
-
+from .binary_tree_dict import TreeDict
 
 __author__ = "João S. O. Bueno"
 __version__ = "0.3.1"

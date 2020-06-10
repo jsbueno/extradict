@@ -2,7 +2,6 @@ from collections.abc import Mapping, MutableMapping
 from copy import copy
 from itertools import zip_longest
 
-
 """Implements an AVLTree auto=balancing tree with a Python Mapping interface"""
 
 
@@ -13,6 +12,7 @@ class EmptyNode:
     __slots__ = ()
     depth = 0
     value = None
+    key = None
 
     def __bool__(self):
         return False
@@ -111,20 +111,28 @@ class PlainNode:
         return path
 
     def get_closest(self, key, path=None):
-        if path is None:
-            path = []
-        path.append(self)
-        self_key = self._cmp_key(self.key)
+        """Retrieves two closest nodes on the tree to given key.
+
+        Returns:
+            A 2 Tuple with Two Node instances;
+
+        If Key is found in the tree, its node is returned twice - otherwise
+        the two nodes that are closest to it according to the comparation made
+        by key_func. If the searched key would fall of the extreme right or
+        extreme left of the Tree, the returned parent corresponding to "the abyss"
+        is the EmptyNode singleton.
+        """
+        path = self.get_node_path(key, path)
+        if path[-1]:  # key found - return twice the same node.
+            return path[-1], path[-1]
+        path.pop()
+        closest = path[-1]
+        closest_key = self._cmp_key(closest.key)
         new_key = self._cmp_key(key)
-        if self_key == new_key:
-            return self, self
-        elif new_key > self_key:
-            if self.right:
-                return self.right.get_closest(key, path)
-            return self, self._get_closest_ancestor_on_other_side(path, side="right")
-        if self.left:
-            return self.left.get_closest(key, path)
-        return self._get_closest_ancestor_on_other_side(path, side="left"), self
+
+        if new_key > closest_key:
+            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")
+        return closest._get_closest_ancestor_on_other_side(path, side="left"), closest
 
     def _get_closest_ancestor_on_other_side(self, path, side):
         # backtrack up to detour
