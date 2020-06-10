@@ -131,8 +131,8 @@ class PlainNode:
         new_key = self._cmp_key(key)
 
         if new_key > closest_key:
-            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")
-        return closest._get_closest_ancestor_on_other_side(path, side="left"), closest
+            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")[1]
+        return closest._get_closest_ancestor_on_other_side(path, side="left")[1], closest
 
     def _get_closest_ancestor_on_other_side(self, path, side):
         # backtrack up to detour
@@ -140,10 +140,10 @@ class PlainNode:
         while True:
             index -= 1
             if index < 0:
-                return EmptyNode
+                return None, EmptyNode
             side_of_child = "same" if getattr(path[index], side) is path[index + 1] else "other"
             if side_of_child == "other":
-                return path[index]
+                return index, path[index]
 
     def _update_depth(self):
         self._depth = max(self.left.depth, self.right.depth) + 1
@@ -215,6 +215,69 @@ class PlainNode:
     @property
     def balanced(self):
         return abs(self.left.depth - self.right.depth) <= 1
+
+    def iter_slice(self, slice_):
+        start, start_fallback = self.get_closest(slice_.start)
+        start = start or start_fallback
+        stop_fallback, stop = self.get_closest(slice_.stop)
+        stop = stop or stop_fallback
+
+        start_key = start._cmp_key(start.key)
+        stop_key = stop._cmp_key(stop.key)
+        step = slice_.step or 1
+        if step not in (1, -1):
+            raise NotImplementedError("Step values for tree-slices should be 1 or -1")
+        path = self.get_node_path(start.key)
+        if (
+            (step > 0 and start_key <= start._cmp_key(slice_.start)) or
+            (step < 0 and start_key >= start._cmp_key(slice_.start))
+        ):
+            yield start
+        node = start
+        while True:
+            if step > 0:
+                path = self._traverse_to_side(path, side="right")
+                node = path[-1]
+                if not node or node._cmp_key(node.key) >= stop_key:
+                    break
+            else:
+                path = self._traverse_to_side(path, side="left")
+                node = path[-1]
+                if not node or node._cmp_key(node.key) <= stop_key:
+                    break
+            yield node
+
+    def _traverse_to_side(self, path, side):
+        next_child = getattr(path[-1], side)
+        if next_child:
+            path.append(next_child)
+            return path
+        other_side = "left" if side == "right" else "right"
+        index, node = self._get_closest_ancestor_on_other_side(path, other_side)
+        path[index:] = ()
+        return path
+
+
+    def graph_repr(self, identifier="key"):
+        str_repr = str(self.key) if identifier=="key" else f"{self.key}: {self.value}"
+        repr_left = (self.left.graph_repr(identifier) if self.left else "").split("\n")
+        repr_right = (self.right.graph_repr(identifier) if self.right else "").split("\n")
+        len_l = len(repr_left[0])
+        len_r = len(repr_right[0])
+        width = len_l + len_r + 3
+        result = [str_repr.center(width)]
+        #result.append("/     \\".center(width))
+        for line_left, line_right in zip_longest(repr_left, repr_right, fillvalue=""):
+            result.append((line_left + "   " + line_right).center(width))
+        return "\n".join(result)
+
+        #result = [[[str_repr]]]
+        #for line_l, line_r in zip_longest(repr_left, repr_right, fillvalue=([[]],)):
+            #new_line = []
+            #new_line.extend(line_l)
+            #new_line.extend(line_r)
+            #result.append(new_line)
+        #return result
 
     def __repr__(self):
         return f"{self.key}, ({repr(self.left) if self.left else ''}, {repr(self.right) if self.right else ''})"
@@ -289,7 +352,7 @@ class TreeDict(MutableMapping):
         if not self.root:
             raise KeyError(key)
         if isinstance(key, slice):
-            return self._getslice(key)
+            return [n.value for n in self.root.iter_slice(key)]
         return self.root.get(key).value
 
     def __setitem__(self, key, value):
@@ -311,12 +374,6 @@ class TreeDict(MutableMapping):
             return None, None
         parent1, parent2 = self.root.get_closest(key)
         ret_values = (parent1.key if parent1 else None), (parent2.key if parent2 else None)
-
-    def _get_slice(self, slice_):
-        start, _ = self.root.get_closest(slice_.start)
-        _, stop = self.root.get_closest(slice_.stop)
-        step = slice_.step or 1
-
 
     def __iter__(self):
         return (n.key for n in self.root) if self.root else iter(())
