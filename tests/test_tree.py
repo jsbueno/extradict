@@ -344,6 +344,25 @@ def test_get_node_path_works(nodes_to_insert, key, expected):
     result = [node.value for node in n.get_node_path(key)]
     assert result == list(expected)
 
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "node_to_start", "side", "expected_last_node"],[
+        [(0, 5, 1, 2), 1, "right", 2],
+        [(0, 5, 1, 2), 2, "right", 5],
+        [(0, 5, 1, 2), 5, "right", None],
+])
+def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_node):
+    values = iter(nodes_to_insert)
+    n = PlainNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    path = n._traverse_to_side(n.get_node_path(node_to_start), side)
+    if not path:
+        assert expected_last_node is None
+        return
+    assert path[-1].value == expected_last_node
+
 @pytest.mark.parametrize(
     ["nodes_to_insert", "slice_", "expected"],[
         [(0, 1, 2, 3, 4, 5), (0, 2, None), (0, 1)],

@@ -271,13 +271,6 @@ class PlainNode:
             result.append((line_left + "   " + line_right).center(width))
         return "\n".join(result)
 
-        #result = [[[str_repr]]]
-        #for line_l, line_r in zip_longest(repr_left, repr_right, fillvalue=([[]],)):
-            #new_line = []
-            #new_line.extend(line_l)
-            #new_line.extend(line_r)
-            #result.append(new_line)
-        #return result
 
     def __repr__(self):
         return f"{self.key}, ({repr(self.left) if self.left else ''}, {repr(self.right) if self.right else ''})"
