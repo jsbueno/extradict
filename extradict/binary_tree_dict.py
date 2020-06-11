@@ -157,9 +157,6 @@ class PlainNode:
     def iter_slice(self, slice_):
         step = slice_.step if slice_.step is not None else 1
 
-        if step not in (1, -1):
-            raise NotImplementedError("Step values for tree-slices should be 1 or -1")
-
         seek_direction = "right" if step > 0 else "left"
         start_side = "left" if step > 0 else "right"
         operator = ge_op if seek_direction == "right" else le_op
@@ -172,9 +169,11 @@ class PlainNode:
         if slice_.stop is not None and operator(start_key, start._cmp_key(slice_.stop)):
             return
 
-
         if slice_.start is None or operator(start_key, slice_start_key):
             yield start
+            counter = 0
+        else:
+            counter = -1
 
         path = self.get_node_path(start.key)
         while True:
@@ -182,7 +181,9 @@ class PlainNode:
             node = path[-1] if path else EmptyNode
             if not node or (slice_.stop is not None and operator(node._cmp_key(node.key), node._cmp_key(slice_.stop))):
                 break
-            yield node
+            counter += 1
+            if not counter % abs(step):
+                yield node
 
 
     def get_node_path(self, key, path=None):
@@ -363,7 +364,7 @@ class TreeDict(MutableMapping):
 
     Having an inner AVL tree and a custom key function,  extra
     features are that `__getitem__` can retrieve a range of itens,
-    and `get_closest` will return a tuple of surrounding keys that exist.
+    and `get_closest_keys` will return a tuple of surrounding keys that exist.
 
     """
     node_cls = AVLNode
@@ -397,11 +398,11 @@ class TreeDict(MutableMapping):
         else:
             self.root.delete(key)
 
-    def get_closest(self, key):
+    def get_closest_keys(self, key):
         if not self.root:
             return None, None
         parent1, parent2 = self.root.get_closest(key)
-        ret_values = (parent1.key if parent1 else None), (parent2.key if parent2 else None)
+        return (parent1.key if parent1 else None), (parent2.key if parent2 else None)
 
     def __iter__(self):
         return (n.key for n in self.root) if self.root else iter(())

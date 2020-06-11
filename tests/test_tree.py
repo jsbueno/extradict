@@ -397,3 +397,23 @@ def test_node_slice_works(nodes_to_insert, slice_, expected):
 
     result = [node.value for node in n.iter_slice(slice(*slice_))]
     assert result == list(expected)
+
+
+@pytest.mark.parametrize(
+    ["nodes_to_insert", "slice_", "expected"],[
+        [(0, 1, 2, 3, 4, 5), (0, 4, 2), (0, 2)],
+        [(0, 1, 2, 3, 4, 5, 6, 7, 8), (0, None, 3), (0, 3, 6)],
+        [(0, 1, 2, 3, 4, 5, 6, 7, 8), (None, 1, -2), (8, 6, 4, 2)],
+        [(0, 1, 2, 3, 4, 5, 6, 7, 8), (None, -1, -2), (8, 6, 4, 2, 0)],
+        [(0, 1, 2, 3, 4, 5), (0.5, 5, 2), (1, 3)],
+        [(0, 1, 2, 3, 4, 5), (0.5, 5.5, 2), (1, 3, 5)],
+        [(0, 1, 2, 3, 4, 5, 6, 7, 8), (6.5, None, -2), (6, 4, 2, 0)],
+])
+def test_node_slice_works_with_larger_than_unity_step(nodes_to_insert, slice_, expected):
+    values = iter(nodes_to_insert)
+    n = AVLNode(next(values))
+    for value in values:
+        n.insert(value)
+
+    result = [node.value for node in n.iter_slice(slice(*slice_))]
+    assert result == list(expected)
