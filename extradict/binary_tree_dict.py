@@ -55,8 +55,33 @@ class PlainNode:
     def leaf(self):
         return not (self.left or self.right)
 
-    def _cmp_key(self, key):
-        return self.key_func(key) if self.key_func else key
+    @property
+    def depth(self):
+        return self._depth
+
+    @property
+    def balanced(self):
+        return abs(self.left.depth - self.right.depth) <= 1
+
+    @property
+    def right(self):
+        return getattr(self, "_right", EmptyNode)
+
+    @right.setter
+    def right(self, value):
+        self._right = value
+        self._update_depth()
+        self._update_len()
+
+    @property
+    def left(self):
+        return getattr(self, "_left", EmptyNode)
+
+    @left.setter
+    def left(self, value):
+        self._left = value
+        self._update_depth()
+        self._update_len()
 
     def insert(self, key, value=_empty, replace=True):
         self_key = self._cmp_key(self.key)
@@ -91,105 +116,6 @@ class PlainNode:
             return self.left.get(key)
         return self.right.get(key)
 
-    def get_node_path(self, key, path=None):
-        """Retrieve a list of nodes down to the node with the given Key.
-
-        If the key does not exist, the last element is set to EmptyNode
-        """
-        if path is None:
-            path = []
-        path.append(self)
-        self_key = self._cmp_key(self.key)
-        new_key = self._cmp_key(key)
-        if self_key == new_key:
-            return path
-        if new_key < self_key:
-            if self.left:
-                return self.left.get_node_path(key, path)
-        elif self.right:
-            return self.right.get_node_path(key, path)
-        path.append(EmptyNode)
-        return path
-
-    def _get_extreme_node(self, side):
-        node = self
-        while node:
-            parent = node
-            node = getattr(node, side)
-        return parent
-
-
-    def get_closest(self, key, path=None):
-        """Retrieves two closest nodes on the tree to given key.
-
-        Returns:
-            A 2 Tuple with Two Node instances;
-
-        If Key is found in the tree, its node is returned twice - otherwise
-        the two nodes that are closest to it according to the comparation made
-        by key_func. If the searched key would fall of the extreme right or
-        extreme left of the Tree, the returned parent corresponding to "the abyss"
-        is the EmptyNode singleton.
-        """
-        path = self.get_node_path(key, path)
-        if path[-1]:  # key found - return twice the same node.
-            return path[-1], path[-1]
-        path.pop()
-        closest = path[-1]
-        closest_key = self._cmp_key(closest.key)
-        new_key = self._cmp_key(key)
-
-        if new_key > closest_key:
-            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")[1]
-        return closest._get_closest_ancestor_on_other_side(path, side="left")[1], closest
-
-    def _get_closest_ancestor_on_other_side(self, path, side):
-        # backtrack up to detour
-        index = len(path) - 1
-        while True:
-            index -= 1
-            if index < 0:
-                return None, EmptyNode
-            side_of_child = "same" if getattr(path[index], side) is path[index + 1] else "other"
-            if side_of_child == "other":
-                return index, path[index]
-
-    def _update_depth(self):
-        self._depth = max(self.left.depth, self.right.depth) + 1
-
-    @property
-    def depth(self):
-        return self._depth
-
-    @property
-    def right(self):
-        return getattr(self, "_right", EmptyNode)
-
-    @right.setter
-    def right(self, value):
-        self._right = value
-        self._update_depth()
-        self._update_len()
-
-    @property
-    def left(self):
-        return getattr(self, "_left", EmptyNode)
-
-    @left.setter
-    def left(self, value):
-        self._left = value
-        self._update_depth()
-        self._update_len()
-
-
-    def _mute_into(self, other, full=False):
-        self.key = other.key
-        self.value = other.value
-        self.key_func = other.key_func
-        if full:
-            self.right = other.right
-            self.left = other.left
-
     def delete(self, key):
         self_key = self._cmp_key(self.key)
         new_key = self._cmp_key(key)
@@ -215,15 +141,18 @@ class PlainNode:
         yield self
         yield from self.right
 
-    def _update_len(self):
-        self._len = 1 + len(self.left) + len(self.right)
-
     def __len__(self):
+        # This and .depth() where built as lazy properties,
+        # iterating on childs in an earlier version - but
+        # that can REALLY slow things down.
+        # No "_len" or "_depth", no "_update_*" calls... but O(N²) instead of O(N).
+
+        # Refactoring to an 'observer' pattern may yet take place.
+
+        # return len(self.right) + len(self.left) + 1
+
         return self._len
 
-    @property
-    def balanced(self):
-        return abs(self.left.depth - self.right.depth) <= 1
 
     def iter_slice(self, slice_):
         step = slice_.step if slice_.step is not None else 1
@@ -252,6 +181,86 @@ class PlainNode:
             if not node or (slice_.stop is not None and operator(node._cmp_key(node.key), node._cmp_key(slice_.stop))):
                 break
             yield node
+
+
+    def get_node_path(self, key, path=None):
+        """Retrieve a list of nodes down to the node with the given Key.
+
+        If the key does not exist, the last element is set to EmptyNode
+        """
+        if path is None:
+            path = []
+        path.append(self)
+        self_key = self._cmp_key(self.key)
+        new_key = self._cmp_key(key)
+        if self_key == new_key:
+            return path
+        if new_key < self_key:
+            if self.left:
+                return self.left.get_node_path(key, path)
+        elif self.right:
+            return self.right.get_node_path(key, path)
+        path.append(EmptyNode)
+        return path
+
+    def get_closest(self, key, path=None):
+        """Retrieves two closest nodes on the tree to given key.
+
+        Returns:
+            A 2 Tuple with Two Node instances;
+
+        If Key is found in the tree, its node is returned twice - otherwise
+        the two nodes that are closest to it according to the comparation made
+        by key_func. If the searched key would fall of the extreme right or
+        extreme left of the Tree, the returned parent corresponding to "the abyss"
+        is the EmptyNode singleton.
+        """
+        path = self.get_node_path(key, path)
+        if path[-1]:  # key found - return twice the same node.
+            return path[-1], path[-1]
+        path.pop()
+        closest = path[-1]
+        closest_key = self._cmp_key(closest.key)
+        new_key = self._cmp_key(key)
+
+        if new_key > closest_key:
+            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")[1]
+        return closest._get_closest_ancestor_on_other_side(path, side="left")[1], closest
+
+    def _cmp_key(self, key):
+        return self.key_func(key) if self.key_func else key
+
+    def _get_extreme_node(self, side):
+        node = self
+        while node:
+            parent = node
+            node = getattr(node, side)
+        return parent
+
+    def _get_closest_ancestor_on_other_side(self, path, side):
+        # backtrack up to detour
+        index = len(path) - 1
+        while True:
+            index -= 1
+            if index < 0:
+                return None, EmptyNode
+            side_of_child = "same" if getattr(path[index], side) is path[index + 1] else "other"
+            if side_of_child == "other":
+                return index, path[index]
+
+    def _update_depth(self):
+        self._depth = max(self.left.depth, self.right.depth) + 1
+
+    def _mute_into(self, other, full=False):
+        self.key = other.key
+        self.value = other.value
+        self.key_func = other.key_func
+        if full:
+            self.right = other.right
+            self.left = other.left
+
+    def _update_len(self):
+        self._len = 1 + len(self.left) + len(self.right)
 
     def _traverse_to_side(self, path, side):
         """Gets the next closest node key on the desired direction
@@ -297,10 +306,8 @@ class PlainNode:
             result.append((line_left + "   " + line_right).center(width))
         return "\n".join(result)
 
-
     def __repr__(self):
         return f"{self.key}, ({repr(self.left) if self.left else ''}, {repr(self.right) if self.right else ''})"
-
 
 
 class AVLNode(PlainNode):
