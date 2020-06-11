@@ -230,3 +230,81 @@ punctuation will be ignored when retrieving items.
 
 Unlike FallbackNormalizedDict this does not keep the original
 version of the keys.
+
+
+## TreeDict
+A Python mapping with an underlying auto-balancing binary tree data structure.
+As such, it allows seeking ranges of keys - so, that
+`mytreedict["aa":"bz"] will return a list with all values in
+the dictionary whose keys are strings starting from "aa"
+up to those starting with "by".
+
+It also features a `.get_closest_keys` method that will
+retrieve the closest existing keys for the required element.
+```python
+>>> from extradict import TreeDict
+>>> a = TreeDict()
+>>> a[1] = "one word"
+>>> a[3] = "another word"
+>>> a[:]
+['one word', 'another word']
+>>> a.get_closest_keys(2)
+(1, 3)
+```
+
+Another feature of these dicts is that as they
+do not rely on an object hash, any Python
+object can be used as a key. Of course
+key objects should be comparable with <=, ==, >=. If
+they are not, errors will be raised. HOWEVER, there is
+an extra feature - when creating the TreeDict a named
+argument `key` parameter can be passed that works the
+same as Python's `sorted` "key" parameter: a callable
+that will receive the key/value pair as its sole argument
+and should return a comparable object. The returned object
+is the one used to keep the Binary Tree organized.
+
+
+If the output of the given `key_func` ties, that is it:
+the new pair simply overrites whatever other key/value
+had the same key_func output. To avoid that,
+craft the key_funcs so that they return a tuple
+with the original key as the second item:
+```python
+>>> from extradict import TreeDict
+>>> b = TreeDict(key=len)
+>>> b["red"] = 1
+>>> b["blue"] = 2
+>>> b
+TreeDict('red'=1, 'blue'=2, key_func= <built-in function len>)
+
+>>> b["1234"] = 5
+>>> b
+TreeDict('red'=1, '1234'=5, key_func= <built-in function len>)
+
+>>> TreeDict(key=lambda k: (len(k), k))
+>>> b["red"] = 1
+>>> b["blue"] = 2
+>>> b["1234"] = 5
+
+In [7]: b
+Out[7]: TreeDict('red'=1, '1234'=5, 'blue'=2, key_func= <function <lambda> at 0x7fbc7f462320>)
+```
+
+
+To support the TreeDict mapping interface, the standalone
+`PlainNode` and `AVLNode` classes are available at
+the `extradict.binary_tree_dict` module - and can be used
+to create a lower level tree data structure, which can
+have more capabilities. For one, the "raw" use allows
+repeated values in the Nodes, all Nodes are root to
+their own subtrees and know nothing of their parents,
+and if one wishes, no need to work with "key: value" pairs:
+if a "pair" argument is not supplied to a Node, it
+reflects the given Key as its own value.
+
+`PlainNode` will build non-autobalancing trees,
+while those built with `AVLNode` will be self-balancing.
+Trying to manually mix node types in the same tree, or
+changing the key_func in different notes,
+will obviously wreck everything.
