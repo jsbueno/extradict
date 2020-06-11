@@ -386,6 +386,8 @@ def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_no
         [(0, 1, 2), (None, None, None), (0, 1, 2)],
         [(0, 1, -1), (None, None, None), (-1, 0, 1)],
         [(0, 1, -1), (None, None, -1), (1, 0, -1)],
+        [(0, 1, 2, 3, 4, 5), (0, 2, -1), ()],
+        [(0, 1, 2, 3, 4, 5), (2, 0, 1), ()],
 ])
 def test_node_slice_works(nodes_to_insert, slice_, expected):
     values = iter(nodes_to_insert)

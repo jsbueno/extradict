@@ -169,12 +169,14 @@ class PlainNode:
         start_key = start._cmp_key(start.key)
         slice_start_key = start._cmp_key(slice_.start)
 
-        path = self.get_node_path(start.key)
-        if (
-            slice_.start is None or operator(start_key, slice_start_key)
-        ):
+        if slice_.stop is not None and operator(start_key, start._cmp_key(slice_.stop)):
+            return
+
+
+        if slice_.start is None or operator(start_key, slice_start_key):
             yield start
-        node = start
+
+        path = self.get_node_path(start.key)
         while True:
             path = self._traverse_to_side(path, side=seek_direction)
             node = path[-1] if path else EmptyNode
