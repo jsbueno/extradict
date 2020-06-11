@@ -11,5 +11,5 @@ from .extratuple import fastnamedtuple
 from .binary_tree_dict import TreeDict
 
 __author__ = "João S. O. Bueno"
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 

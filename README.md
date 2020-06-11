@@ -1,6 +1,9 @@
 # Extra Dictionary classes and utilities for Python
 
-New utilities to be added as they are devised
+Some Mapping containers and tools for daily use with Python.
+This attempts to be a small package with no dependencies,
+just deliverying its data-types as described bellow
+enough tested for production-usage.
 
 
 ## VersionDict
@@ -34,7 +37,7 @@ It works by internally keeping a list of (named)tuples with
 
 ### Example:
 
-```
+```python
 
 >>> from extradict import VersionDict
 >>> a = VersionDict(b=0)
@@ -55,7 +58,7 @@ however, whenever a key's value is updated, it is moved
 last on the dictionary order.
 
 ### Example:
-```
+```python
 >>> from collections import OrderedDict
 >>> a = OrderedDict((("a", 1), ("b", 2), ("c", 3)))
 >>> list(a.keys())
@@ -79,7 +82,7 @@ mapping, or any Python object by using the  `from <myobject> import key1, key2` 
 
 
 
-```
+```python
 >>> from extradict import MapGetter
 >>> a = dict(b="test", c="another test")
 >>> with MapGetter(a) as a:
@@ -90,7 +93,7 @@ test another test
 ```
 
 Or:
-```
+```python
 >>> from collections import namedtuple
 >>> a = namedtuple("a", "c d")
 >>> b = a(2,3)
@@ -103,7 +106,7 @@ Or:
 It works with Python 3.4+ "enum"s - which is great as it allow one
 to use the enums by their own name, without having to prepend the Enum class
 everytime:
-```
+```python
 >>> from enum import Enum
 
 >>> class Colors(tuple, Enum):
@@ -125,7 +128,7 @@ everytime:
 MapGetter can also have a `default` value or callable which
 will generate values for each name that one tries to "import" from it:
 
-```
+```python
 >>> with MapGetter(default=lambda x: x) as x:
 ...    from x import foo, bar, baz
 ...
@@ -157,7 +160,7 @@ at the "BijectiveDict.assigned".
 Conversely, the generated keys are exposed as "BijectiveDict.generated_keys"
 and can be seen as a dict at "Bijective.generated"
 
-```
+```python
 >>> from extradict import BijectiveDict
 >>>
 >>> a = BijectiveDict(b = 1, c = 2)
@@ -286,11 +289,11 @@ TreeDict('red'=1, '1234'=5, key_func= <built-in function len>)
 >>> b["red"] = 1
 >>> b["blue"] = 2
 >>> b["1234"] = 5
-
-In [7]: b
-Out[7]: TreeDict('red'=1, '1234'=5, 'blue'=2, key_func= <function <lambda> at 0x7fbc7f462320>)
+>>> b
+>>> TreeDict('red'=1, '1234'=5, 'blue'=2, key_func= <function <lambda> at 0x7fbc7f462320>)
 ```
 
+### PlainNode and AVLNode
 
 To support the TreeDict mapping interface, the standalone
 `PlainNode` and `AVLNode` classes are available at
