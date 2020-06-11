@@ -1,6 +1,7 @@
 from collections.abc import Mapping, MutableMapping
 from copy import copy
 from itertools import zip_longest
+from operator import le as le_op, ge as ge_op
 
 """Implements an AVLTree auto=balancing tree with a Python Mapping interface"""
 
@@ -110,6 +111,14 @@ class PlainNode:
         path.append(EmptyNode)
         return path
 
+    def _get_extreme_node(self, side):
+        node = self
+        while node:
+            parent = node
+            node = getattr(node, side)
+        return parent
+
+
     def get_closest(self, key, path=None):
         """Retrieves two closest nodes on the tree to given key.
 
@@ -217,36 +226,32 @@ class PlainNode:
         return abs(self.left.depth - self.right.depth) <= 1
 
     def iter_slice(self, slice_):
-        start, start_fallback = self.get_closest(slice_.start)
-        start = start or start_fallback
-        stop_fallback, stop = self.get_closest(slice_.stop)
-        stop = stop or stop_fallback
+        step = slice_.step if slice_.step is not None else 1
 
-        start_key = start._cmp_key(start.key)
-        stop_key = stop._cmp_key(stop.key)
-        step = slice_.step or 1
         if step not in (1, -1):
             raise NotImplementedError("Step values for tree-slices should be 1 or -1")
+
+        seek_direction = "right" if step > 0 else "left"
+        start_side = "left" if step > 0 else "right"
+        operator = ge_op if seek_direction == "right" else le_op
+
+        start, start_fallback = self.get_closest(slice_.start) if slice_.start is not None else (None, self._get_extreme_node(start_side))
+        start = start or start_fallback
+        start_key = start._cmp_key(start.key)
+        slice_start_key = start._cmp_key(slice_.start)
+
         path = self.get_node_path(start.key)
         if (
-            (step > 0 and start_key <= start._cmp_key(slice_.start)) or
-            (step < 0 and start_key >= start._cmp_key(slice_.start))
+            slice_.start is None or operator(start_key, slice_start_key)
         ):
             yield start
         node = start
         while True:
-            if step > 0:
-                path = self._traverse_to_side(path, side="right")
-                node = path[-1]
-                if not node or node._cmp_key(node.key) >= stop_key:
-                    break
-            else:
-                path = self._traverse_to_side(path, side="left")
-                node = path[-1]
-                if not node or node._cmp_key(node.key) <= stop_key:
-                    break
+            path = self._traverse_to_side(path, side=seek_direction)
+            node = path[-1] if path else EmptyNode
+            if not node or (slice_.stop is not None and operator(node._cmp_key(node.key), node._cmp_key(slice_.stop))):
+                break
             yield node
-
 
     def _traverse_to_side(self, path, side):
         """Gets the next closest node key on the desired direction
@@ -278,8 +283,6 @@ class PlainNode:
                 return path
             current = path.pop()
         return path
-
-
 
     def graph_repr(self, identifier="key"):
         str_repr = str(self.key) if identifier=="key" else f"{self.key}: {self.value}"
