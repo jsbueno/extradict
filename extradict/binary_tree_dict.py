@@ -247,15 +247,38 @@ class PlainNode:
                     break
             yield node
 
+
     def _traverse_to_side(self, path, side):
-        next_child = getattr(path[-1], side)
-        if next_child:
-            path.append(next_child)
-            return path
+        """Gets the next closest node key on the desired direction
+
+        Search path is modified in place and returned with the new node
+        as last element. Subsequent calls with the modified path
+        will get the subsequent nodes in the same direction.
+
+        """
         other_side = "left" if side == "right" else "right"
-        index, node = self._get_closest_ancestor_on_other_side(path, other_side)
-        path[index:] = ()
+        # Descend on the searched_side:
+        next_child = getattr(path[-1], side)
+        found_descending = False
+        while next_child:
+            found_descending = True
+            path.append(next_child)
+            # now, try to keep on the "other_side" branch as far as possible.
+            grand_child = getattr(next_child, other_side)
+            while grand_child:
+                path.append(grand_child)
+                grand_child = getattr(grand_child, other_side)
+            next_child = getattr(grand_child, side, None)
+        if found_descending:
+            return path
+
+        current = path.pop()
+        while path:
+            if getattr(path[-1], other_side) is current:
+                return path
+            current = path.pop()
         return path
+
 
 
     def graph_repr(self, identifier="key"):

@@ -347,9 +347,17 @@ def test_get_node_path_works(nodes_to_insert, key, expected):
 
 @pytest.mark.parametrize(
     ["nodes_to_insert", "node_to_start", "side", "expected_last_node"],[
+        [(0, 5, 1, 2), 0, "right", 1],
         [(0, 5, 1, 2), 1, "right", 2],
         [(0, 5, 1, 2), 2, "right", 5],
         [(0, 5, 1, 2), 5, "right", None],
+        [(0, -5, -1, -2), -1, "left", -2],
+        [(0, -5, -1, -2), -2, "left", -5],
+        [(0, -5, -1, -2), -5, "left", None],
+        [(0, -5, -1, -2, 5, 1, 2), 2, "left", 1],
+        [(0, -5, -1, -2, 5, 1, 2), 1, "left", 0],
+        [(0, -5, -1, -2, 5, 1, 2), 0, "left", -1],
+        [(0, -5, -1, -2, 5, 1, 2), -1, "left", -2],
 ])
 def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_node):
     values = iter(nodes_to_insert)
