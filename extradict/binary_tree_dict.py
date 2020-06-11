@@ -47,7 +47,7 @@ class PlainNode:
         self.value = value if value != _empty else key
         self.left = left
         self.right = right
-        self.key_func = None
+        self.key_func = key_func
         self._depth = 1
         self._len = 1
 
@@ -88,6 +88,8 @@ class PlainNode:
         new_key = self._cmp_key(key)
         if new_key == self_key and replace:
             self.value = value if value is not _empty else key
+            if self.key != key:
+                self.key = key
             return
         try:
             target_str = "left" if new_key < self_key else "right"
@@ -320,6 +322,10 @@ class AVLNode(PlainNode):
         super().insert(key, value, replace)
         self.balance()
 
+    def delete(self, key):
+        super().delete(key)
+        self.balance()
+
     def balance(self):
         if self.balanced:
             return
@@ -411,4 +417,4 @@ class TreeDict(MutableMapping):
         return len(self.root) if self.root else 0
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({', '.join('%r=%r' % (k, v) for k, v in self.items())}{', key_func= %r' % (self.key_func) if self.key_func else ''})"
+        return f"{self.__class__.__name__}({', '.join('%r=%r' % (k, v) for k, v in self.items())}{', key_func= %r' % (self.key) if self.key else ''})"
