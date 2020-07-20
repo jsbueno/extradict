@@ -187,9 +187,9 @@ a namedtuple class than the stdlib version.
 
 Instead, it relies on closures to do its magic.
 
-However, these will be slower to instantiate tahn stdlib version. The "fastnamedtuple"
+However, these will be slower to instantiate than stdlib version. The "fastnamedtuple"
 is faster in all respects, although it holds the same API for instantiating as tuples, and
-performs no lenght checking.
+performs no length checking.
 
 
 ## fastnamedtuple
