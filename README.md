@@ -2,7 +2,7 @@
 
 Some Mapping containers and tools for daily use with Python.
 This attempts to be a small package with no dependencies,
-just deliverying its data-types as described bellow
+just delivering its data-types as described bellow
 enough tested for production-usage.
 
 
@@ -23,7 +23,7 @@ NB. When using the `version` parameter, `get` will raise
 a KeyError if the key does not exist for that version and
 no default value is specified.
 
-`.copy(version=None)`:  yields a copy of the current dictonary at that version, with history preserved
+`.copy(version=None)`:  yields a copy of the current dictionary at that version, with history preserved
 (if version is not given, the current version is used)
 
 `.freeze(version=None)` yields a snapshot of the versionDict in the form of a plain dictionary for
@@ -105,7 +105,7 @@ Or:
 
 It works with Python 3.4+ "enum"s - which is great as it allow one
 to use the enums by their own name, without having to prepend the Enum class
-everytime:
+every time:
 ```python
 >>> from enum import Enum
 
@@ -154,7 +154,7 @@ The syntax `from <mydict> import key1 as var1` works as well.
 This is a bijective dictionary for which each pair key, value added
 is also added as value, key.
 
-The explictly inserted keys can be retrieved as the "assigned_keys"
+The explicitly inserted keys can be retrieved as the "assigned_keys"
 attribute - and a dictionary copy with all such keys is available
 at the "BijectiveDict.assigned".
 Conversely, the generated keys are exposed as "BijectiveDict.generated_keys"
@@ -195,15 +195,15 @@ performs no length checking.
 ## fastnamedtuple
 Like namedtuple but the class returned take an iterable for its values
 rather than positioned or named parameters. No checks are made towards the iterable
-lenght, which should match the number of attributes
+length, which should match the number of attributes
 It is faster for instantiating as compared with stdlib's namedtuple
 
 
 ## defaultnamedtuple
 Implementation of named-tuple using default parameters -
-Either pass a sequence of 2-tupes (or an OrderedDict) as the second parameter, or
+Either pass a sequence of 2-tuples (or an OrderedDict) as the second parameter, or
 send in kwargs with the default parameters, after the first.
-(This takes advantadge of python3.6 + guaranteed ordering of **kwargs for a function
+(This takes advantage of python3.6 + guaranteed ordering of **kwargs for a function
 see https://docs.python.org/3.6/whatsnew/3.6.html)
 
 The resulting object can accept positional or named parameters to be instantiated, as a
@@ -269,7 +269,7 @@ is the one used to keep the Binary Tree organized.
 
 
 If the output of the given `key_func` ties, that is it:
-the new pair simply overrites whatever other key/value
+the new pair simply overwrites whatever other key/value
 had the same key_func output. To avoid that,
 craft the key_funcs so that they return a tuple
 with the original key as the second item:
