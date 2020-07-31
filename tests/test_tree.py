@@ -1,4 +1,9 @@
+import threading
+from time import sleep
+from unittest.mock import patch
+
 from extradict.binary_tree_dict import PlainNode, AVLNode
+
 import pytest
 
 
@@ -417,3 +422,14 @@ def test_node_slice_works_with_larger_than_unity_step(nodes_to_insert, slice_, e
 
     result = [node.value for node in n.iter_slice(slice(*slice_))]
     assert result == list(expected)
+
+
+def delay_wrapper_decorator(func, delay=0.025):
+    def wrapper(*args, **kw):
+        sleep(delay)
+        return func(*args, **kw)
+    return wrapper
+
+@pytest.mark.skip("test code incomplete")
+def test_plainnode_avoids_thread_race_condition():
+    pass

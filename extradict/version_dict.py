@@ -34,9 +34,14 @@ class VersionDict(MutableMapping):
             self.data[key] = [VersionedValue(self._version, value)]
         self.local = threading.local()
         self.local._updating = False
+        self._init_lock()
+
+    def _init_lock(self):
+        self.lock = threading.RLock()
 
     def copy(self, version=None):
         new = VersionDict.__new__(self.__class__)
+        new._init_lock()
         if version is None or version >= self.version:
             new._version = self._version
             new.data = copy(self.data)
@@ -71,7 +76,7 @@ class VersionDict(MutableMapping):
         """The update operation uses a single version number for
             all affected keys
         """
-        with threading.Lock():
+        with self.lock:
             self._version += 1
             try:
                 self.local._updating = True
@@ -113,7 +118,7 @@ class VersionDict(MutableMapping):
         return value.value
 
     def __setitem__(self, item, value):
-        with threading.Lock():
+        with self.lock:
             if not self.local._updating:
                 self._version += 1
             if item not in self.data:
@@ -121,8 +126,9 @@ class VersionDict(MutableMapping):
             self.data[item].append(VersionedValue(self._version, value))
 
     def __delitem__(self, item):
-        self._version += 1
-        self.data[item].append(VersionedValue(self._version, _Deleted))
+        with self.lock:
+            self._version += 1
+            self.data[item].append(VersionedValue(self._version, _Deleted))
 
     def __iter__(self):
         for key, value in self.data.items():
