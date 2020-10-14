@@ -311,3 +311,48 @@ while those built with `AVLNode` will be self-balancing.
 Trying to manually mix node types in the same tree, or
 changing the key_func in different notes,
 will obviously wreck everything.
+
+## Grouper
+
+
+Think of it as an itertools.groupby which returns a mapping
+Or as an itertools.tee that splits the stream into filtered
+substreams according to the passed key-callable.
+
+Given an iterable and a key callable,
+each element in the iterable is run through the key callable and
+made available in an iterator under a bucket using the resulting key-value.
+
+The source iterable need not be ordered (unlike itertools.groupby).
+If no key function  is given, the identity function is used.
+
+The items will be made available under the iterable-values as requested,
+in a lazy way when possible. Note that several different method calls may
+precipatate an eager processing of all items in the source iterator:
+.keys() or len(), for example.
+
+Whenever a new key is found during input consumption, a "Queue" iterator,
+which is a thin wrapper over collections.deque is created under that key
+and can be further iterated to retrieve more elements that map to
+the same key.
+
+In short, this is very similar to `itertools.tee`, but with a filter
+so that each element goes to a mapped bucket.
+
+Once created, the resulting object may obtionally be called. Doing this
+will consume all data in the source iterator at once, and return a
+a plain dictionary with all data fetched into lists.
+
+For example, to divide a sequence of numbers from 0 to 10 in
+5 buckets, all one need to do is: `Grouper(myseq, lambda x: x // 2)`
+
+Or:
+```python
+>>> from extradict import Grouper
+>>> even_odd = Grouper(range(10), lambda x: "even" if not x % 2 else "odd")
+>>> print(list(even_odd["even"]))
+[0, 2, 4, 6, 8]
+>>> print(list(even_odd["odd"]))
+[1, 3, 5, 7, 9]
+
+```
