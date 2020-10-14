@@ -4,7 +4,7 @@ from extradict import (
     FallbackNormalizedDict,
     NormalizedDict,
     BijectiveDict,
-    TreeDict
+    TreeDict,
 )
 
 import pytest
