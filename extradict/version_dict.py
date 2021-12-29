@@ -68,7 +68,7 @@ class VersionDict(MutableMapping):
         _default = object()
         for key, value in self.data.items():
             frozen_value = self.get(key, _default, version=version)
-            if frozen_value != _default:
+            if frozen_value is not _default:
                 new[key] = frozen_value
         return new
 
