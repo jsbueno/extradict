@@ -1,5 +1,7 @@
-from extradict import MapGetter
+import enum
 import threading
+
+from extradict import MapGetter
 
 
 def test_mapgetter_creates_local_variables():
@@ -145,21 +147,17 @@ def test_mapgetter_accepts_import_object_attributes():
 
 
 
-try:
-    import enum
-except ImportError:
-    pass
-else:
-    def test_mapgetter_works_with_enums():
-        class A(enum.Enum):
-            foo = 0
-            bar = 1
-            baz = 2
-        with MapGetter(A) as A:
-            from A import foo, bar, baz
 
-        assert foo is A.foo
-        assert bar is A.bar
-        assert baz is A.baz
-        assert foo.value == 0
+def test_mapgetter_works_with_enums():
+    class A(enum.Enum):
+        foo = 0
+        bar = 1
+        baz = 2
+    with MapGetter(A) as A:
+        from A import foo, bar, baz
+
+    assert foo is A.foo
+    assert bar is A.bar
+    assert baz is A.baz
+    assert foo.value == 0
 

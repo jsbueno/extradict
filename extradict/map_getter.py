@@ -22,15 +22,15 @@ class _PseudoModule(object):
             try:
                 return getattr(self._obj, attr)
             except AttributeError:
-                if _default is _sentinel:
-                    raise AttributeError("Object '{}' has no attribute '{}' ".format(type(self._obj), attr ))
+                if self._default is _sentinel:
+                    raise AttributeError(f"Object '{type(self._obj)}' has no attribute '{attr}' ")
         if self._default is _sentinel:
             # Try to extract a value from mapping, which could be a
             # defaultdict or some similar mapping:
             try:
                 value = self.__dict__[attr]
             except KeyError:
-                raise AttributeError("Mapping '{}' has no '{}' key".format(type(self.mapping), attr ))
+                raise AttributeError(f"Mapping '{type(self.mapping)}' has no '{attr}' key")
             return value
         if not callable(self._default):
             return self._default
