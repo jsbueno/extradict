@@ -2,7 +2,7 @@ import threading
 from time import sleep
 from unittest.mock import patch
 
-from extradict.binary_tree_dict import PlainNode, AVLNode
+from extradict.binary_tree_dict import PlainNode, AVLNode, TreeDict
 
 import pytest
 
@@ -433,3 +433,13 @@ def delay_wrapper_decorator(func, delay=0.025):
 @pytest.mark.skip("test code incomplete")
 def test_plainnode_avoids_thread_race_condition():
     pass
+
+
+def test_treedict_key_function_works():
+    words = "art bee cat desk elephant".split()
+    rwords = ["".join(reversed(w)) for w in words]
+    a = TreeDict(key=lambda k: list(reversed(k)))
+    for word in rwords:
+        a[word] = word
+
+    assert list(a) == rwords

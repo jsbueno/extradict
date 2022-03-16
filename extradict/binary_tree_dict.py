@@ -94,7 +94,7 @@ class PlainNode:
         try:
             target_str = "left" if new_key < self_key else "right"
         except TypeError as error:
-            raise KeyError(f"{key} type incompatible with other keys in the tree")
+            raise KeyError(f"{key!r} {'was converted to ' if type(key) != type(new_key) else 'has'}type {type(new_key)} and cant't be compared with {type(self_key)} ")
         target = getattr(self, target_str)
         if target:
             target.insert(key, value, replace)
