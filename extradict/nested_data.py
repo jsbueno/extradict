@@ -1,6 +1,9 @@
 from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence
+from copy import deepcopy
 
 import typing as T
+
+_strings = (str, bytes, bytearray)
 
 class _NestedDict(MutableMapping):
     def __init__(self, *args, **kw):
@@ -18,7 +21,7 @@ class _NestedDict(MutableMapping):
             self[key] = value
 
     @classmethod
-    def _wrap(cls, mapping: Mapping):
+    def wrap(cls, mapping: Mapping):
         self = cls()
         self.data = mapping
         return self
@@ -26,10 +29,8 @@ class _NestedDict(MutableMapping):
     @staticmethod
     def _get_next_component(key):
         parts = key.split(".", 1)
-        if len(parts) == 1:
-            return parts[0], None
-        elif not parts:
-            raise TypeError("Empty key")
+        if len(parts) == 1 :
+            return (parts[0] if parts[0] else None), None
         return parts
 
     def __getitem__(self, key):
@@ -37,21 +38,43 @@ class _NestedDict(MutableMapping):
         if subpath:
             return self[key][subpath]
         value = self.data[key]
-        return (
-            self._wrap(value) if isinstance(value, Mapping) else
-            _NestedList._wrap(value) if isinstance(self, Sequence) and not isinstance(value, (bytes, str, bytearray)) else  value
-        )
+        return self.wrap(value) if isinstance(value, Mapping) else SafeNestedData(value)  # TBD: logic to wrap sequences
 
-    def __setitem__(self, key: str, value: T.Any):
-        #breakpoint()
+    def merge(self, data: Mapping, path=""):
+        self._setitem(path, data, merging=True)
+        return self
+
+    def __setitem__(self, key:str, value: T.Any):
+        return self._setitem(key, value, merging=False)
+
+
+    def _setitem(self, key: str, value: T.Any, merging: bool):
         if isinstance(value, (_NestedDict, _NestedList)):
             value = value.data
 
         key, subpath = self._get_next_component(key)
+
+        if key is None:
+            if not isinstance(value, Mapping):
+                raise TypeError(f"{self.__class__.__name__} root value must be set to a mapping")
+            if not merging:
+                self.data = deepcopy(value)
+                return
+            for new_key, new_value in value.items():
+                if new_key not in self.data:
+                    self[new_key] = new_value # recurses here, with merging = False
+                    continue
+                if isinstance(new_value, Mapping):
+                    self[new_key]._setitem("", new_value, merging)
+                    continue
+                if isinstance(new_value, Sequence) and not isinstance(new_value, strings):
+                    raise NotImplementedError()
+                self.data[new_key] = new_value
+
         if key not in self.data:
             if subpath:
                 self.data[key] = {}
-                self[key][subpath] = value
+                self[key]._setitem(subpath, value, merging)
             else:
                 self.data[key]=value
             return
@@ -62,16 +85,16 @@ class _NestedDict(MutableMapping):
                     raise NotImplementedError()
                 else:
                     self[key] = {}
-            self[key][subpath] = value
+            self[key]._setitem(subpath, value, merging)
             return
-        if key not in self.data:
-            self.data[key] = value
-        elif isinstance(self[key], Mapping):
+
+        if isinstance(self.data[key], Mapping):
             if isinstance(value, Mapping):
+                subitem = self[key]
                 for sub_key, sub_value in value.items():
-                    self[key][sub_key] = sub_value
+                    subitem._setitem(sub_key, sub_value, merging)
             else:
-                self[key] = value
+                self.data[key] = value
         #elif isinstance(self[key], Sequence):
         else:
             raise NotImplementedError()
@@ -81,6 +104,15 @@ class _NestedDict(MutableMapping):
 
     def __iter__(self):
         return iter(self.data)
+
+    def __contains__(self, key):
+        key, subpath = self._get_next_component(key)
+        if key not in self.data:
+            return False
+        if not subpath:
+            return True
+        return subpath in self[key]
+
 
     def walk(self):
         pass
@@ -99,3 +131,10 @@ class _NestedList(MutableSequence):
 def NestedData(*args, **kw):
     # TBD: infer if root is sequence or mapping
     return _NestedDict(*args, **kw)
+
+def SafeNestedData(*args, **kw):
+    if len(args) == 1:
+        data = args[0]
+        if not isinstance(data, Mapping) or isinstance(data, _strings) or not isinstance(data, Sequence):
+            return args[0]
+    return NestedData(*args, **kw)
