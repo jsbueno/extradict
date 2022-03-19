@@ -1,3 +1,4 @@
+from abc import ABC
 from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence
 from copy import deepcopy
 
@@ -125,12 +126,38 @@ class _NestedDict(MutableMapping):
 
 
 class _NestedList(MutableSequence):
-    pass
+    # WIP
+
+    @classmethod
+    def wrap(self, item):
+        pass
+
+    def __getitem__(self, item):
+        pass
+
+    def __setitem__(self, item, value):
+        pass
+
+    def __delitem__(self, item, value):
+        pass
+
+    def insert(self, position, value):
+        pass
 
 
-def NestedData(*args, **kw):
-    # TBD: infer if root is sequence or mapping
-    return _NestedDict(*args, **kw)
+class NestedData(ABC):
+
+    #implemented as a class so that structures can be tested as instances of it.
+    # actually this skelleton just a dispatcher factory function, that works
+    # as "virtual parent" to the real data structures
+    def __new__(cls, *args, **kw):
+        # TBD: infer if root is sequence or mapping
+        return _NestedDict(*args, **kw)
+
+# Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
+NestedData.register(_NestedDict)
+NestedData.register(_NestedList)
+
 
 def SafeNestedData(*args, **kw):
     if len(args) == 1:

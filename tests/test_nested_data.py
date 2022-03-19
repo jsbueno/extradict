@@ -1,4 +1,5 @@
 from extradict import NestedData
+from extradict.nested_data import _NestedDict, _NestedList
 
 import pytest
 
@@ -92,3 +93,8 @@ def test_nested_data_new_data_is_deeply_merged():
     assert a["person.address.number"] == 37
     assert a["person.address.cep"] == "01311-902"
 
+
+def test_inner_data_structures_present_themselves_as_nesteddata_instances():
+    assert isinstance(_NestedDict(), NestedData)
+    #assert isinstance(_NestedList(), NestedData)
+    assert isinstance(NestedData(), NestedData)
