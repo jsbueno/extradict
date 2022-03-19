@@ -146,6 +146,28 @@ class _NestedList(MutableSequence):
 
 
 class NestedData(ABC):
+    """Nestable mappings and sequences data structure to facilitate field access
+
+    The idea is a single data structure that can hold "JSON" data, adding some
+    helper methods and functionalities.
+
+    Primarily, one can use a dotted string path to access a deply nested key, value pair,
+    instead of concatenating several dictionary ".get" calls.
+
+    Examples:
+         person["address.city"] instead of person["address"]["city"]
+
+         or
+
+         persons["10.contacts.emails.0"]
+         (NB: sequence implementation is WIP)
+
+    The first tool available is the ability to merge mappings with extra keys
+    into existing nested mappings, without deleting non colidng keys:
+    a "person.address" key that would contain "city" but no "street" or "zip-code"
+    can be updated with:  `record["person.address"].merge({"street": "5th ave", "zip-code": "000000"})`
+
+    """
 
     #implemented as a class so that structures can be tested as instances of it.
     # actually this skelleton just a dispatcher factory function, that works
