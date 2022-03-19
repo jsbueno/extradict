@@ -17,6 +17,12 @@ class _NestedDict(MutableMapping):
         for key, value in items:
             self[key] = value
 
+    @classmethod
+    def _wrap(cls, mapping: Mapping):
+        self = cls()
+        self.data = mapping
+        return self
+
     @staticmethod
     def _get_next_component(key):
         parts = key.split(".", 1)
@@ -31,7 +37,10 @@ class _NestedDict(MutableMapping):
         if subpath:
             return self[key][subpath]
         value = self.data[key]
-        return NestedData(value) if isinstance(value, (Mapping, Sequence)) and not isinstance(value, (bytes, str, bytearray)) else value
+        return (
+            self._wrap(value) if isinstance(value, Mapping) else
+            _NestedList._wrap(value) if isinstance(self, Sequence) and not isinstance(value, (bytes, str, bytearray)) else  value
+        )
 
     def __setitem__(self, key: str, value: T.Any):
         #breakpoint()
@@ -42,7 +51,7 @@ class _NestedDict(MutableMapping):
         if key not in self.data:
             if subpath:
                 self.data[key] = {}
-                self.data[key][subpath] = value
+                self[key][subpath] = value
             else:
                 self.data[key]=value
             return
@@ -78,6 +87,9 @@ class _NestedDict(MutableMapping):
 
     def __len__(self):
         return len(self.data)
+
+    def __repr__(self):
+        return f"NestedData({self.data!r})"
 
 
 class _NestedList(MutableSequence):
