@@ -101,7 +101,13 @@ class _NestedDict(MutableMapping):
             raise NotImplementedError()
 
     def __delitem__(self, key):
-        pass
+        if key in self.data:
+            del self.data[key]
+            return
+        key, subpath = self._get_next_component(key)
+        if key not in self.data:
+            raise KeyError(key)
+        del self[key][subpath]
 
     def __iter__(self):
         return iter(self.data)
@@ -113,7 +119,6 @@ class _NestedDict(MutableMapping):
         if not subpath:
             return True
         return subpath in self[key]
-
 
     def walk(self):
         pass
@@ -140,6 +145,9 @@ class _NestedList(MutableSequence):
 
     def __delitem__(self, item, value):
         pass
+
+    def __len__(self):
+        return len(self.data)
 
     def insert(self, position, value):
         pass

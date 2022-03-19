@@ -96,5 +96,20 @@ def test_nested_data_new_data_is_deeply_merged():
 
 def test_inner_data_structures_present_themselves_as_nesteddata_instances():
     assert isinstance(_NestedDict(), NestedData)
-    #assert isinstance(_NestedList(), NestedData)
+    assert isinstance(_NestedList(), NestedData)
     assert isinstance(NestedData(), NestedData)
+
+
+def test_nested_data_can_delete_deep_elements():
+    a = NestedData({"person.address.city": "São Paulo"})
+    a["person.address.street"] = "Av. Paulista"
+
+    del a["person.address.city"]
+    assert "person.address.street" in a
+    del a["person.address.street"]
+
+    assert a["person.address"] == {}
+    del a["person.address"]
+
+    with pytest.raises(KeyError):
+        a["person.address"]
