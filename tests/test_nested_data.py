@@ -1,3 +1,5 @@
+from collections.abc import Mapping, Sequence
+
 from extradict import NestedData
 from extradict.nested_data import _NestedDict, _NestedList
 
@@ -15,6 +17,11 @@ def test_nested_data_composite_key():
     assert "city" not in a["person"]
     assert "address" not in a
 
+
+def test_nested_data_creates_mappings():
+    a = NestedData({"person.address.city": "São Paulo"})
+    assert isinstance(a, NestedData)
+    assert isinstance(a, Mapping)
 
 def test_nested_data_can_be_assigned():
     address = {"city": "São Paulo", "street": "Av. Paulista", "number": 37}
@@ -113,3 +120,47 @@ def test_nested_data_can_delete_deep_elements():
 
     with pytest.raises(KeyError):
         a["person.address"]
+
+
+#########################
+
+def test_nested_data_composite_key_creates_sequences_with_numeric_indexes():
+    a = NestedData({"0": "São Paulo", "1": "Rio de Janeiro"})
+    assert a.data == ["São Paulo", "Rio de Janeiro"]
+    assert isinstance(a, NestedData)
+    assert isinstance(a, Sequence)
+
+
+def test_nested_data_composite_key_creates_sequences_with_numeric_indexes_as_ints():
+    a = NestedData({0: "São Paulo", 1: "Rio de Janeiro"})
+    assert a.data == ["São Paulo", "Rio de Janeiro"]
+    assert isinstance(a, NestedData)
+    assert isinstance(a, Sequence)
+
+
+def test_nested_data_creates_sequences_from_sequences():
+    a = NestedData(["São Paulo",  "Rio de Janeiro"])
+    assert a.data == ["São Paulo", "Rio de Janeiro"]
+    assert isinstance(a, Sequence)
+
+
+def test_nested_data_creates_sequences_from_sets():
+    a = NestedData({"São Paulo",  "Rio de Janeiro"})
+    assert isinstance(a, Sequence)
+    assert set(a.data) == set(["São Paulo", "Rio de Janeiro"])
+
+
+def test_nested_data_numeric_indexes_require_all_keys():
+    with pytest.raises(ValueError):
+        a = NestedData({"0": "São Paulo", "2": "Rio de Janeiro"})
+    a = NestedData({"0": "São Paulo", "2": "Rio de Janeiro"}, default=None)
+    assert a.data == ["São Paulo", None, "Rio de Janeiro"]
+    assert isinstance(a, Sequence)
+
+
+def test_nested_data_composite_key_creates_sequences_with_nested_numeric_indexes():
+    a = NestedData({"cities": {"0": "São Paulo", "1": "Rio de Janeiro"}})
+    assert a["cities"] == ["São Paulo", "Rio de Janeiro"]
+    assert isinstance(a, NestedData)
+    assert isinstance(a, Mapping)
+    assert isinstance(a["cities"], Sequence)

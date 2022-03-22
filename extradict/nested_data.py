@@ -1,12 +1,36 @@
 from abc import ABC
-from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence
+from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence, Set, Iterable
 from copy import deepcopy
 
 import typing as T
 
+
+_sentinel = object()
 _strings = (str, bytes, bytearray)
 
-class _NestedDict(MutableMapping):
+
+class _NestedBase:
+    @staticmethod
+    def _get_next_component(key):
+        parts = key.split(".", 1)
+        if len(parts) == 1 :
+            return (parts[0] if parts[0] else None), None
+        return parts
+
+    @classmethod
+    def wrap(cls, mapping):
+        self = cls()
+        self.data = mapping
+        return self
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        return f"NestedData({self.data!r})"
+
+
+class _NestedDict(_NestedBase, MutableMapping):
     def __init__(self, *args, **kw):
         self.data = {}
 
@@ -21,21 +45,12 @@ class _NestedDict(MutableMapping):
         for key, value in items:
             self[key] = value
 
-    @classmethod
-    def wrap(cls, mapping: Mapping):
-        self = cls()
-        self.data = mapping
-        return self
-
-    @staticmethod
-    def _get_next_component(key):
-        parts = key.split(".", 1)
-        if len(parts) == 1 :
-            return (parts[0] if parts[0] else None), None
-        return parts
 
     def __getitem__(self, key):
         key, subpath = self._get_next_component(key)
+        # TBD: upon "key" being a path element that would select multiple components,
+        # build and return a NestedDataQuery object
+
         if subpath:
             return self[key][subpath]
         value = self.data[key]
@@ -63,9 +78,17 @@ class _NestedDict(MutableMapping):
                 return
             for new_key, new_value in value.items():
                 if new_key not in self.data:
+                    if isinstance(new_value, Mapping) and _should_be_a_sequence(new_value):
+                        new_value = NestedData(new_value).data
                     self[new_key] = new_value # recurses here, with merging = False
                     continue
                 if isinstance(new_value, Mapping):
+                    if _should_be_a_sequence(new_value):
+                        if not merging:
+                            self.data[new_key] = NestedData(new_value).data
+                        else:
+                            raise NotImplementedError()
+                        continue
                     self[new_key]._setitem("", new_value, merging)
                     continue
                 if isinstance(new_value, Sequence) and not isinstance(new_value, strings):
@@ -77,6 +100,8 @@ class _NestedDict(MutableMapping):
                 self.data[key] = {}
                 self[key]._setitem(subpath, value, merging)
             else:
+                if isinstance(value, Mapping) and _should_be_a_sequence(value):
+                    value = _extract_sequence(value)
                 self.data[key]=value
             return
         if subpath:
@@ -126,19 +151,35 @@ class _NestedDict(MutableMapping):
     def __len__(self):
         return len(self.data)
 
-    def __repr__(self):
-        return f"NestedData({self.data!r})"
+
+def _extract_sequence(obj, default=_sentinel):
+    elements = []
+    target = int(max(obj.keys(), key=int))
+    for i in range(target + 1):
+        element = obj.get(i, obj.get(str(i), _sentinel))
+        # the sentiel usage in the next lines is completly decoupled:
+        if element is _sentinel:
+            if default is not _sentinel:
+                element = default if not callable(default) else default()
+            else:
+                raise ValueError(f"Missing index {i} on NestedData sequence")
+        elements.append(element)
+    return elements
 
 
-class _NestedList(MutableSequence):
-    # WIP
-
-    @classmethod
-    def wrap(self, item):
-        pass
+class _NestedList(_NestedBase, MutableSequence):
+    def __init__(self, *args, default=_sentinel):
+        if len(args) == 1 and isinstance(args[0], Iterable):
+            args = args[0]
+        if isinstance(args, Mapping):
+            args = _extract_sequence(args, default=default)
+        else:
+            # even if it is a list, we make a shallow copy:
+            args = list(args)
+        self.data = args
 
     def __getitem__(self, item):
-        pass
+        return self.data[int(item)]
 
     def __setitem__(self, item, value):
         pass
@@ -146,11 +187,38 @@ class _NestedList(MutableSequence):
     def __delitem__(self, item, value):
         pass
 
-    def __len__(self):
-        return len(self.data)
-
     def insert(self, position, value):
         pass
+
+
+class NestedDataQuery:
+    """Whenever a retrieve data op would get more than one element from a NestedData
+
+    A lazy Query is created which can iterate over all the filtered keys from the original object
+    """
+    # WIP
+
+
+def _should_be_a_sequence(obj, default=_sentinel, **kw):
+    if all(isinstance(k, int) or k.isdigit() for k in obj.keys()):
+        if default:
+            return True
+        if len(set(map(int, obj.keys()))) == len(obj) and 0 in obj or "0" in obj:
+            return True
+    return False
+
+
+def _find_best_container(args, kw):
+    if len(args) == 0 and kw and any(k for k in kw.keys() if not k.isdigit()):
+        return Mapping
+    if len(args) == 1:
+        if isinstance(args[0], Mapping):
+            return Sequence if _should_be_a_sequence(args[0]) else Mapping
+        return Sequence
+    if len(args) > 1:
+        return Sequence
+    return Mapping
+
 
 
 class NestedData(ABC):
@@ -182,11 +250,16 @@ class NestedData(ABC):
     # as "virtual parent" to the real data structures
     def __new__(cls, *args, **kw):
         # TBD: infer if root is sequence or mapping
-        return _NestedDict(*args, **kw)
+
+        cls = _find_best_container(args, kw)
+        classes = {Sequence: _NestedList, Mapping: _NestedDict}
+
+        return classes[cls](*args, **kw)
 
 # Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
 NestedData.register(_NestedDict)
 NestedData.register(_NestedList)
+NestedData.register(NestedDataQuery)
 
 
 def SafeNestedData(*args, **kw):
