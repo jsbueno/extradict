@@ -5,6 +5,11 @@ from extradict.nested_data import _NestedDict, _NestedList
 
 import pytest
 
+@pytest.mark.parametrize(["initial"], [({},), ([],)])
+def test_can_build_nested_data_from_empty_object(initial):
+    nested = NestedData(initial)
+    assert isinstance(nested.data, type(initial))
+
 def test_nested_data_composite_key():
     a = NestedData({"person.address.city": "São Paulo"})
     assert a["person.address.city"] == "São Paulo"

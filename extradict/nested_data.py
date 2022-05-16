@@ -18,10 +18,16 @@ class _NestedBase:
         return parts
 
     @classmethod
-    def wrap(cls, mapping):
-        self = cls()
-        self.data = mapping
-        return self
+    def wrap(cls, obj):
+        if isinstance(obj, __class__):
+            return obj
+        new_cls = _find_best_container([obj])
+        if issubclass(new_cls, __class__):
+            self = new_cls()
+            self.data = obj
+            return self
+
+        return obj
 
     def __len__(self):
         return len(self.data)
@@ -154,6 +160,9 @@ class _NestedDict(_NestedBase, MutableMapping):
 
 def _extract_sequence(obj, default=_sentinel):
     elements = []
+    if not obj:
+        # Normally not reachable: an empty mapping should be created as a mapping
+        return elements
     target = int(max(obj.keys(), key=int))
     for i in range(target + 1):
         element = obj.get(i, obj.get(str(i), _sentinel))
@@ -178,17 +187,47 @@ class _NestedList(_NestedBase, MutableSequence):
             args = list(args)
         self.data = args
 
-    def __getitem__(self, item):
-        return self.data[int(item)]
+    def __getitem__(self, index):
+        #No sense in accepting "*": just take the whole list.
+        if not isinstance(index, int):
+            index, subpath = self._get_next_component(index)
+        else:
+            subpath = None
+        wrapped = self.wrap(self.data[int(index)])
+        if subpath:
+            return wrapped[subpath]
+        return wrapped
 
-    def __setitem__(self, item, value):
-        pass
+    def __setitem__(self, index, item):
+        if not isinstance(index, int):
+            index, subpath = self._get_next_component(index)
+        else:
+            subpath = None
+        if index == "*":
+            raise NotImplementedError()
+        if subpath is None:
+            self.data[int(index)] = item if not isinstance(item, NestedData) else item.data
+        else:
+            self.wrap(self[index])[subpath] = item
 
-    def __delitem__(self, item, value):
-        pass
+    def __delitem__(self, index):
+        if not isinstance(index, int):
+            index, subpath = self._get_next_component(index)
+        else:
+            subpath = None
+        if subpath is None:
+            del self.data[int(index)]
+        del self.wrap(self[index])[subpath]
 
-    def insert(self, position, value):
-        pass
+
+    def insert(self, index,  item):
+        if item == "*":
+            raise NotImplementedError()
+        if not isinstance(index, int):
+            key, subpath = self._get_next_component(index)
+        if subpath:
+            raise TypeError("Nested dotted name for insertion does not make sense")
+        self.data.insert(int(index), item if not isinstance(item, NestedData) else item.data)
 
 
 class NestedDataQuery:
@@ -200,6 +239,10 @@ class NestedDataQuery:
 
 
 def _should_be_a_sequence(obj, default=_sentinel, **kw):
+    if not obj:
+        return False
+    if isinstance(obj, Set):
+        return True
     if all(isinstance(k, int) or k.isdigit() for k in obj.keys()):
         if default:
             return True
@@ -208,16 +251,20 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
     return False
 
 
-def _find_best_container(args, kw):
+def _find_best_container(args, kw=None):
+    if kw is None:
+        kw = {}
+    if len(args) == 1 and (not isinstance(args[0], (Sequence, Mapping, Set)) or isinstance(args[0], _strings)):
+        return lambda x: x
     if len(args) == 0 and kw and any(k for k in kw.keys() if not k.isdigit()):
-        return Mapping
+        return _NestedDict
     if len(args) == 1:
         if isinstance(args[0], Mapping):
-            return Sequence if _should_be_a_sequence(args[0]) else Mapping
-        return Sequence
+            return _NestedList if _should_be_a_sequence(args[0]) else _NestedDict
+        return _NestedList
     if len(args) > 1:
-        return Sequence
-    return Mapping
+        return _NestedList
+    return _NestedDict
 
 
 
@@ -249,12 +296,10 @@ class NestedData(ABC):
     # actually this skelleton just a dispatcher factory function, that works
     # as "virtual parent" to the real data structures
     def __new__(cls, *args, **kw):
-        # TBD: infer if root is sequence or mapping
 
         cls = _find_best_container(args, kw)
-        classes = {Sequence: _NestedList, Mapping: _NestedDict}
 
-        return classes[cls](*args, **kw)
+        return cls(*args, **kw)
 
 # Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
 NestedData.register(_NestedDict)
