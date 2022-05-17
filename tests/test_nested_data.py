@@ -203,3 +203,4 @@ def test_nest_data_sequence_atribution_with_star_index_changes_all_sub_values():
     for item in a["data"]:
         assert isinstance(item, NestedData)
         assert item["detail.state"] == "A"
+

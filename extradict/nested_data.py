@@ -1,6 +1,7 @@
 from abc import ABC
 from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence, Set, Iterable
 from copy import deepcopy
+from textwrap import indent
 
 import typing as T
 
@@ -32,6 +33,7 @@ class _NestedBase:
     @classmethod
     def unwrap(cls, obj):
         return obj if not isinstance(obj, __class__) else item.data
+
     def __eq__(self, other):
         if isinstance(other, __class__):
             return self.data == other.data
@@ -41,7 +43,25 @@ class _NestedBase:
         return len(self.data)
 
     def __repr__(self):
-        return f"NestedData({self.data!r})"
+        if isinstance(self, Mapping):
+            key_repr = []
+            for k, v in self.items():
+                r = f"{repr(k)}: "
+                if isinstance(v, __class__):
+                    r += indent(repr(v), "   ")
+                else:
+                    r += f"<{type(v).__name__}>"
+                key_repr.append(r)
+            return "{{{}}}".format(",\n".join(key_repr))
+
+        else: # Sequence
+            if not len(self):
+                return "[]"
+            if isinstance(self[0], __class__):
+                return "[\n{}]".format(indent(repr(self[0]), "    ") + (f"\n...\nx {len(self)}\n" if len(self) > 1 else ""))
+            else:
+                return repr(list(self))
+        #return f"NestedData({self.data!r})"
 
 
 class _NestedDict(_NestedBase, MutableMapping):
@@ -299,12 +319,13 @@ class NestedData(ABC):
          or
 
          persons["10.contacts.emails.0"]
-         (NB: sequence implementation is WIP)
+
 
     The first tool available is the ability to merge mappings with extra keys
     into existing nested mappings, without deleting non colidng keys:
     a "person.address" key that would contain "city" but no "street" or "zip-code"
-    can be updated with:  `record["person.address"].merge({"street": "5th ave", "zip-code": "000000"})`
+    can be updated with:  `record["person"].merge({"address": {"street": "5th ave", "zip-code": "000000"}})`
+    preserving the "person.address.city" value in the process
 
     """
 
