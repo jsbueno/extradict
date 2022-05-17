@@ -22,12 +22,20 @@ class _NestedBase:
         if isinstance(obj, __class__):
             return obj
         new_cls = _find_best_container([obj])
-        if issubclass(new_cls, __class__):
+        if isinstance(new_cls, type) and issubclass(new_cls, __class__):
             self = new_cls()
             self.data = obj
             return self
 
         return obj
+
+    @classmethod
+    def unwrap(cls, obj):
+        return obj if not isinstance(obj, __class__) else item.data
+    def __eq__(self, other):
+        if isinstance(other, __class__):
+            return self.data == other.data
+        return self.data == other
 
     def __len__(self):
         return len(self.data)
@@ -60,7 +68,7 @@ class _NestedDict(_NestedBase, MutableMapping):
         if subpath:
             return self[key][subpath]
         value = self.data[key]
-        return self.wrap(value) if isinstance(value, Mapping) else SafeNestedData(value)  # TBD: logic to wrap sequences
+        return self.wrap(value)
 
     def merge(self, data: Mapping, path=""):
         self._setitem(path, data, merging=True)
@@ -117,6 +125,11 @@ class _NestedDict(_NestedBase, MutableMapping):
                     raise NotImplementedError()
                 else:
                     self[key] = {}
+            if not merging:
+                self[key][subpath] = value
+                return
+            if isinstance(self[key], Sequence):
+                raise NotImplementedError("Can't yet effect merge on structures containing sequences")
             self[key]._setitem(subpath, value, merging)
             return
 
@@ -125,11 +138,9 @@ class _NestedDict(_NestedBase, MutableMapping):
                 subitem = self[key]
                 for sub_key, sub_value in value.items():
                     subitem._setitem(sub_key, sub_value, merging)
-            else:
-                self.data[key] = value
-        #elif isinstance(self[key], Sequence):
-        else:
-            raise NotImplementedError()
+            return
+        self.data[key] = value
+
 
     def __delitem__(self, key):
         if key in self.data:
@@ -204,7 +215,12 @@ class _NestedList(_NestedBase, MutableSequence):
         else:
             subpath = None
         if index == "*":
-            raise NotImplementedError()
+            for i, element in enumerate(self):
+                if subpath:
+                    element[subpath] = item
+                else:
+                    self[i] = item
+            return
         if subpath is None:
             self.data[int(index)] = item if not isinstance(item, NestedData) else item.data
         else:

@@ -106,10 +106,24 @@ def test_nested_data_new_data_is_deeply_merged():
     assert a["person.address.cep"] == "01311-902"
 
 
-def test_inner_data_structures_present_themselves_as_nesteddata_instances():
+def test_inner_data_structures_present_themselves_as_nested_data_instances():
     assert isinstance(_NestedDict(), NestedData)
     assert isinstance(_NestedList(), NestedData)
     assert isinstance(NestedData(), NestedData)
+
+
+def test_nested_data_instances_compare_equal_to_unwrapped_data():
+    assert NestedData({"a": 1}) == {"a": 1}
+    assert NestedData([1, 2, 3]) == [1, 2, 3]
+
+
+def test_retrieving_subtree_returns_nested_data_instances():
+    a = NestedData({"a": [1, 2, 3, {"b": 2}]})
+    assert isinstance(a["a"], NestedData)
+    assert isinstance(a["a.3"], NestedData)
+    assert isinstance(a["a"][3], NestedData)
+    assert isinstance(a["a.2"], int)
+
 
 
 def test_nested_data_can_delete_deep_elements():
@@ -169,3 +183,23 @@ def test_nested_data_composite_key_creates_sequences_with_nested_numeric_indexes
     assert isinstance(a, NestedData)
     assert isinstance(a, Mapping)
     assert isinstance(a["cities"], Sequence)
+
+
+def test_nest_data_sequence_atribution_with_star_index_changes_all_sub_values():
+
+    a = NestedData(
+        {"data": [
+            {"detail": {"state": "M"}},
+            {"detail": {"state": "N"}},
+            {"detail": {"state": "O"}},
+            {"detail": {"state": "D"}},
+            {"detail": {"state": "X"}},
+            ]
+        }
+    )
+
+    a["data.*.detail.state"] = "A"
+
+    for item in a["data"]:
+        assert isinstance(item, NestedData)
+        assert item["detail.state"] == "A"
