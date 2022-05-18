@@ -43,12 +43,19 @@ class _NestedBase:
         return len(self.data)
 
     def __repr__(self):
+        def indent_content(r):
+            if "\n" not in r:
+                return r
+            offset = len(r) - len(r.lstrip("[{"))
+            r = r[:offset] + ("\n" if r[offset] != "\n" else "") + indent(r[offset:], "    ")
+            return r
+
         if isinstance(self, Mapping):
             key_repr = []
             for k, v in self.items():
                 r = f"{repr(k)}: "
                 if isinstance(v, __class__):
-                    r += indent(repr(v), "   ")
+                    r += indent_content(repr(v))
                 else:
                     r += f"<{type(v).__name__}>"
                 key_repr.append(r)
@@ -58,7 +65,7 @@ class _NestedBase:
             if not len(self):
                 return "[]"
             if isinstance(self[0], __class__):
-                return "[\n{}]".format(indent(repr(self[0]), "    ") + (f"\n...\nx {len(self)}\n" if len(self) > 1 else ""))
+                return "[{}]".format(indent_content(repr(self[0])) + (f"\n...\nx {len(self)}\n" if len(self) > 1 else ""))
             else:
                 return repr(list(self))
         #return f"NestedData({self.data!r})"
