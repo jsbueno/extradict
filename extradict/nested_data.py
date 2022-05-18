@@ -35,9 +35,7 @@ class _NestedBase:
         return obj if not isinstance(obj, __class__) else item.data
 
     def __eq__(self, other):
-        if isinstance(other, __class__):
-            return self.data == other.data
-        return self.data == other
+        return self.data == self.unwrap(other)
 
     def __len__(self):
         return len(self.data)
@@ -264,21 +262,11 @@ class _NestedList(_NestedBase, MutableSequence):
 
 
     def insert(self, index,  item):
-        if item == "*":
-            raise NotImplementedError()
-        if not isinstance(index, int):
-            key, subpath = self._get_next_component(index)
-        if subpath:
-            raise TypeError("Nested dotted name for insertion does not make sense")
+        try:
+            index = index.__index__()
+        except Exception as error:
+            raise TypeError from error
         self.data.insert(int(index), item if not isinstance(item, NestedData) else item.data)
-
-
-class NestedDataQuery:
-    """Whenever a retrieve data op would get more than one element from a NestedData
-
-    A lazy Query is created which can iterate over all the filtered keys from the original object
-    """
-    # WIP
 
 
 def _should_be_a_sequence(obj, default=_sentinel, **kw):
@@ -332,7 +320,12 @@ class NestedData(ABC):
     into existing nested mappings, without deleting non colidng keys:
     a "person.address" key that would contain "city" but no "street" or "zip-code"
     can be updated with:  `record["person"].merge({"address": {"street": "5th ave", "zip-code": "000000"}})`
-    preserving the "person.address.city" value in the process
+    preserving the "person.address.city" value in the process.
+
+    The ".data" attribute stores the object contents as a tree of dicionary and lists as needed -
+    these are lazily wrapped as NestedData instances if retrieved through the class, but
+    can be freely manipulated directly.
+
 
     """
 
@@ -348,12 +341,4 @@ class NestedData(ABC):
 # Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
 NestedData.register(_NestedDict)
 NestedData.register(_NestedList)
-NestedData.register(NestedDataQuery)
 
-
-def SafeNestedData(*args, **kw):
-    if len(args) == 1:
-        data = args[0]
-        if not isinstance(data, Mapping) or isinstance(data, _strings) or not isinstance(data, Sequence):
-            return args[0]
-    return NestedData(*args, **kw)

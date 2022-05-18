@@ -204,3 +204,24 @@ def test_nest_data_sequence_atribution_with_star_index_changes_all_sub_values():
         assert isinstance(item, NestedData)
         assert item["detail.state"] == "A"
 
+
+def test_nested_data_sequence_works_with_str_index():
+    a = NestedData([10,20,30])
+    assert a["0"] == 10
+
+
+def test_nested_data_sequence_works_with_int_index():
+    a = NestedData([10,20,30])
+    assert a[0] == 10
+
+def test_nested_data_sequence_append_root():
+    a = NestedData([10,20,30])
+    a.append(40)
+    assert a[3] == 40
+
+
+def test_nested_data_sequence_append_l2():
+    a = NestedData({"b" : [10,20,30]})
+    a["b"].append(40)
+    assert a["b.3"] == 40
+
