@@ -356,3 +356,42 @@ Or:
 [1, 3, 5, 7, 9]
 
 ```
+
+
+## NestedData
+
+Nestable mappings and sequences data structure to facilitate field access
+
+The idea is a single data structure that can hold "JSON" data, adding some
+helper methods and functionalities.
+
+Primarily, one can use a dotted string path to access a deply nested key, value pair,
+instead of concatenating several dictionary ".get" calls.
+
+Examples:
+      `person["address.city"] instead of person["address"]["city"]`
+
+      or
+
+      `persons["10.contacts.emails.0"]`
+
+
+The first tool available is the ability to merge mappings with extra keys
+into existing nested mappings, without deleting non colidng keys:
+a "person.address" key that would contain "city" but no "street" or "zip-code"
+can be updated with:  `record["person"].merge({"address": {"street": "5th ave", "zip-code": "000000"}})`
+preserving the "person.address.city" value in the process.
+
+The ".data" attribute stores the object contents as a tree of dicionary and lists as needed -
+these are lazily wrapped as NestedData instances if retrieved through the class, but
+can be freely manipulated directly.
+
+```python
+>>> import json
+>>> from extradict import NestedData
+>>> a = NestedData(json.load(open("myfile.json")))
+>>> assert a["persons.0.address"] == a["persons"][0]["address"]
+True
+>>> a.merge({"city": None}, "persons.*.address")  # creates a new "city" key in all addresses
+```
+

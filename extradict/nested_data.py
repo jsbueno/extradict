@@ -106,6 +106,7 @@ class _NestedDict(_NestedBase, MutableMapping):
 
 
     def _setitem(self, key: str, value: T.Any, merging: bool):
+        #cyclomatic complexity is my bitch
         if isinstance(value, (_NestedDict, _NestedList)):
             value = value.data
 
@@ -126,23 +127,6 @@ class _NestedDict(_NestedBase, MutableMapping):
                         continue
                 self[new_key] = deepcopy(new_value)
             return
-                #if new_key not in self.data:
-                    #if isinstance(new_value, Mapping) and _should_be_a_sequence(new_value):
-                        #new_value = NestedData(new_value).data
-                    #self[new_key] = new_value # recurses here, with merging = False
-                    #continue
-                #if isinstance(new_value, Mapping):
-                    #if _should_be_a_sequence(new_value):
-                        #if not merging:
-                            #self.data[new_key] = NestedData(new_value).data
-                        #else:
-                            #raise NotImplementedError()
-                        #continue
-                    #self[new_key]._setitem("", new_value, merging)
-                    #continue
-                #if isinstance(new_value, Sequence) and not isinstance(new_value, _strings):
-                    #raise NotImplementedError()
-                #self.data[new_key] = new_value
 
         if key not in self.data:
             if subpath:
@@ -155,9 +139,12 @@ class _NestedDict(_NestedBase, MutableMapping):
             return
         if subpath:
             if not isinstance(self.data[key], (Mapping, Sequence)):
-                next_key, next_subpath = self._get_next_component(key)
+                next_key, next_subpath = self._get_next_component(subpath)
                 if next_key.isdigit():
-                    raise NotImplementedError()
+                    if next_key == "0":
+                        self[key] = [{}]
+                    else:
+                        raise IndexError("New sequence not starting at 0 when merging")
                 else:
                     self[key] = {}
             if not merging:
@@ -176,7 +163,6 @@ class _NestedDict(_NestedBase, MutableMapping):
                     subitem._setitem(sub_key, sub_value, merging)
             return
         self.data[key] = value
-
 
     def __delitem__(self, key):
         if key in self.data:
@@ -305,11 +291,6 @@ class _NestedList(_NestedBase, MutableSequence):
         return self
 
 
-
-
-
-
-
 def _should_be_a_sequence(obj, default=_sentinel, **kw):
     if not obj:
         return False
@@ -378,6 +359,12 @@ class NestedData(ABC):
         cls = _find_best_container(args, kw)
 
         return cls(*args, **kw)
+
+    def merge(self, data, path):
+        """Will insert or change new keys present in data into the existing data structure,
+        starting at "path".
+        """
+        pass
 
 # Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
 NestedData.register(_NestedDict)
