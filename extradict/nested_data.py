@@ -13,6 +13,8 @@ _strings = (str, bytes, bytearray)
 class _NestedBase:
     @staticmethod
     def _get_next_component(key):
+        if key is None:
+            return None, None
         parts = key.split(".", 1)
         if len(parts) == 1 :
             return (parts[0] if parts[0] else None), None
@@ -95,12 +97,12 @@ class _NestedDict(_NestedBase, MutableMapping):
         value = self.data[key]
         return self.wrap(value)
 
-    def merge(self, data: Mapping, path=""):
-        self._setitem(path, data, merging=True)
+    def merge(self, data, path=""):
+        self._setitem(path, self.unwrap(data), merging=True)
         return self
 
     def __setitem__(self, key:str, value: T.Any):
-        return self._setitem(key, value, merging=False)
+        return self._setitem(key, self.unwrap(value), merging=False)
 
 
     def _setitem(self, key: str, value: T.Any, merging: bool):
@@ -109,30 +111,38 @@ class _NestedDict(_NestedBase, MutableMapping):
 
         key, subpath = self._get_next_component(key)
 
-        if key is None:
+        if not key: #we are modifying the key contents at the root of this object
             if not isinstance(value, Mapping):
                 raise TypeError(f"{self.__class__.__name__} root value must be set to a mapping")
             if not merging:
                 self.data = deepcopy(value)
                 return
+
             for new_key, new_value in value.items():
-                if new_key not in self.data:
-                    if isinstance(new_value, Mapping) and _should_be_a_sequence(new_value):
-                        new_value = NestedData(new_value).data
-                    self[new_key] = new_value # recurses here, with merging = False
-                    continue
-                if isinstance(new_value, Mapping):
-                    if _should_be_a_sequence(new_value):
-                        if not merging:
-                            self.data[new_key] = NestedData(new_value).data
-                        else:
-                            raise NotImplementedError()
+                if new_key in self.data:
+                    sub_item = self[new_key]
+                    if isinstance(sub_item, NestedData):
+                        sub_item.merge(new_value, "")
                         continue
-                    self[new_key]._setitem("", new_value, merging)
-                    continue
-                if isinstance(new_value, Sequence) and not isinstance(new_value, strings):
-                    raise NotImplementedError()
-                self.data[new_key] = new_value
+                self[new_key] = deepcopy(new_value)
+            return
+                #if new_key not in self.data:
+                    #if isinstance(new_value, Mapping) and _should_be_a_sequence(new_value):
+                        #new_value = NestedData(new_value).data
+                    #self[new_key] = new_value # recurses here, with merging = False
+                    #continue
+                #if isinstance(new_value, Mapping):
+                    #if _should_be_a_sequence(new_value):
+                        #if not merging:
+                            #self.data[new_key] = NestedData(new_value).data
+                        #else:
+                            #raise NotImplementedError()
+                        #continue
+                    #self[new_key]._setitem("", new_value, merging)
+                    #continue
+                #if isinstance(new_value, Sequence) and not isinstance(new_value, _strings):
+                    #raise NotImplementedError()
+                #self.data[new_key] = new_value
 
         if key not in self.data:
             if subpath:
@@ -154,7 +164,8 @@ class _NestedDict(_NestedBase, MutableMapping):
                 self[key][subpath] = value
                 return
             if isinstance(self[key], Sequence):
-                raise NotImplementedError("Can't yet effect merge on structures containing sequences")
+                self[key].merge(value, subpath)
+                return
             self[key]._setitem(subpath, value, merging)
             return
 
@@ -267,6 +278,36 @@ class _NestedList(_NestedBase, MutableSequence):
         except Exception as error:
             raise TypeError from error
         self.data.insert(int(index), item if not isinstance(item, NestedData) else item.data)
+
+    def merge(self, data, path=None):
+        data = self.unwrap(data)
+        if path is None:
+            path = ""
+        if isinstance(path, str):
+            key, subpath = self._get_next_component(path)
+            if not key:
+                raise IndexError("No index to perform merging on")
+        else:
+            key = str(path.__index__())  # let it burn if this fails.
+            subpath = ""
+        if key == "*":
+            item_iterable = enumerate(self)
+        else:
+            item_iterable = [(key, self[key])]
+        for i, item in item_iterable:
+            if isinstance(item, NestedData):
+                item.merge(data, subpath)
+            elif not subpath:
+                self[i] = data
+            else:
+                raise IndexError("Incompatible item with further merging: item {item!r} at position {i} is not a container which could fit {subpath}")
+
+        return self
+
+
+
+
+
 
 
 def _should_be_a_sequence(obj, default=_sentinel, **kw):

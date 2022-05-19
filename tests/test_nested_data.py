@@ -205,6 +205,51 @@ def test_nest_data_sequence_atribution_with_star_index_changes_all_sub_values():
         assert item["detail.state"] == "A"
 
 
+@pytest.mark.parametrize(["path", "target"], [
+    ("data.*", {"detail": {"state": "A"}}),
+    ("data.*.detail", {"state": "A"}),
+    ("data.*.detail.state", "A"),
+])
+def test_nest_data_sequence_merge_with_star_index_changes_all_sub_values(path, target):
+    a = NestedData(
+        {"data": [
+            {"detail": {"state": "M", "other": 0}},
+            {"detail": {"state": "N", "other": 1}},
+            {"detail": {"state": "O", "other": 2}},
+            {"detail": {"state": "D", "other": 3}},
+            {"detail": {"state": "X", "other": 4}},
+            ]
+        }
+    )
+    a.merge(target, path)
+
+    for i, item in enumerate(a["data"]):
+        assert isinstance(item, NestedData)
+        assert item["detail.state"] == "A"
+        assert item["detail.other"] == i
+
+def test_nested_data_sequence_can_shallow_merge_ifitem_not_container():
+    a = NestedData([0, 1, 2])
+    a.merge(3, 0)
+    assert a[0] == 3
+
+def test_nested_data_sequence_cant_deep_merge_ifitem_not_container():
+    a = NestedData([0, 1, 2])
+    with pytest.raises(IndexError):
+        a.merge(1, "0.b")
+
+@pytest.mark.parametrize(["path"], [(0,), ("0",)])
+def test_nested_data_sequence_can_merge_ifitem_dict(path):
+    a = NestedData([{}, 1, 2])
+    a.merge({"b": 1}, path)
+    assert a["0.b"] == 1
+
+def test_nested_data_sequence_can_merge_ifitem_list():
+    a = NestedData([[{}], 1, 2])
+    a.merge({"b": 1}, "0.0.a")
+    assert a["0.0.a.b"] == 1
+
+
 def test_nested_data_sequence_works_with_str_index():
     a = NestedData([10,20,30])
     assert a["0"] == 10
