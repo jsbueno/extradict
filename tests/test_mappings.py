@@ -6,6 +6,7 @@ from extradict import (
     BijectiveDict,
     TreeDict,
 )
+from extradict.nested_data import _NestedDict
 
 import pytest
 
@@ -25,7 +26,8 @@ def all_mappings(func):
             FallbackNormalizedDict,
             NormalizedDict,
             BijectiveDict,
-            TreeDict
+            TreeDict,
+            _NestedDict
         ],
     )(func)
 
