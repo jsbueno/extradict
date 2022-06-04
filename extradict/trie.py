@@ -52,11 +52,15 @@ class CharTrie(MutableMapping):
         self.data[prefix] = value
 
     def __delitem__(self, key):
-        pass
+        # FIXME: has to recursively delete subtree
+        if key + END not in self.data:
+            raise KeyError()
+        del self.data[key + END]
+        self.data[key].remove(END)
 
     def __iter__(self):
-        pass
+        yield from iter(self.contents)
 
     def __len__(self):
-        pass
+        return len(self.contents)
 
