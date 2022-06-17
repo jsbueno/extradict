@@ -5,6 +5,7 @@ from extradict import (
     NormalizedDict,
     BijectiveDict,
     TreeDict,
+    OrderableMapping,
 )
 from extradict.nested_data import _NestedDict
 
@@ -27,7 +28,8 @@ def all_mappings(func):
             NormalizedDict,
             BijectiveDict,
             TreeDict,
-            _NestedDict
+            _NestedDict,
+            OrderableMapping,
         ],
     )(func)
 

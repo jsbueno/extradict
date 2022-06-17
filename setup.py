@@ -9,7 +9,7 @@ setup(
     license = "LGPLv3+",
     author = "João S. O. Bueno",
     author_email = "gwidion@gmail.com",
-    description = "Enhanced, maybe useful, data containers and utilities: A versioned dictionary, a bidirectional dictionary, a binary tree backed dictionary, a Grouper iterator mapper similar to itertools.tee, and an easy extractor from dictionary key/values to variables",
+    description = "Useful data containers and utilities: A versioned dictionary, a bidirectional dictionary, a binary tree backed dictionary, a Grouper iterator mapper similar to itertools.tee, and an easy extractor from dictionary key/values to variables",
     keywords = "versioned bijective assigner getter unpack transactional container collection dict dictionary normalized binarytree",
     py_modules = ['extradict'],
     url = 'https://github.com/jsbueno/extradict',
