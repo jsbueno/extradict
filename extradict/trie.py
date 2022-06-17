@@ -1,5 +1,7 @@
 from collections.abc import MutableMapping
 
+# These two are officially stated by Unicode as "not characters".
+# will do fine as sentinels:
 START = "\ufffe"
 END = "\uffff"
 
@@ -36,7 +38,9 @@ class CharTrie(MutableMapping):
         if prefix not in self.data:
             return results
         for item in self.data[prefix]:
-            if item == END:
+            if item == END:  # It is not because it is used as a singleton around
+                             # that one can use "is": once merged to a string and sliced
+                             # from there you have new instances. (thanks unit tests!)
                 results.add(prefix)
                 continue
             results.update(subitem for subitem in self._contents(prefix + item))
