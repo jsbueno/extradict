@@ -32,7 +32,7 @@ class OrderableMapping(MutableMapping):
     """
     def __init__(
             self,
-            initial: "Union[Mapping, Sequence[tuple[hashable, any]]|None"=None
+            initial: "Union[Mapping, Sequence[tuple[hashable, any]]|None"=None,
             *,
             key = None,
         ):
