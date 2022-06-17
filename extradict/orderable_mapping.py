@@ -191,15 +191,24 @@ class OrderableMapping(MutableMapping):
         with self.lock:
             if self.key:
                 insertion_key = self.key(key, value)
-                for index, order_node in enumerate(self.order._iter_nodes()):
-                    order_key = order_node.value
-                    order_value = self.data[order_key]
-                    if insertion_key < self.key(order_key, order_value):
-                        self.order._insert_before_node(order_node, key)
-                        break
-                else:
-                    self.order.append(key)
-            else:
+                if key in self.data:
+                    old_value = self.data[key]
+                    old_insertion_key = self.key(key, old_value)
+                    if old_insertion_key == insertion_key:  # Key function does not rely on value, or order would not be changed anyway
+                        self.data[key] = value
+                    else:
+                        del self[key]
+
+                if key not in self.data:  # Not an ΅else" as the old key might have been just deleted
+                    for index, order_node in enumerate(self.order._iter_nodes()):
+                        order_key = order_node.value
+                        order_value = self.data[order_key]
+                        if insertion_key < self.key(order_key, order_value):
+                            self.order._insert_before_node(order_node, key)
+                            break
+                    else:
+                        self.order.append(key)
+            else:  # default no key (order-of-insertion) path:
                 if key not in self.data and not self._inserting:
                         self.order.append(key)
             self.data[key] = value

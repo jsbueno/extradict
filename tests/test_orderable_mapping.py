@@ -67,16 +67,31 @@ def test_orderable_mapping_copy():
     with pytest.raises(KeyError):
         b["c"]
 
+
 def test_orderable_mapping_custom_key_for_keys():
     a = OrderableMapping({0: 1}, key=lambda k, v: k)
     a[20] = 2
     a[10] = 3
     assert list(a.keys()) == [0, 10, 20]
 
+
 def test_orderable_mapping_custom_key_for_values():
     a = OrderableMapping({0: 10, 1: 30, 3: 20}, key=lambda k, v: v)
     a[4] = -10
     assert list(a.values()) == [-10, 10, 20, 30]
+
+
+def test_orderable_mapping_custom_key_for_keys_rewrite_value():
+    a = OrderableMapping({0: 0, 20:20, 10:10}, key=lambda k, v: k)
+    a[10] = 30
+    assert list(a.keys()) == [0, 10, 20]
+
+
+def test_orderable_mapping_custom_key_for_values_rewrite_value():
+    a = OrderableMapping({0: 0, 1: 10, 2: 20}, key=lambda k, v: v)
+    assert list(a.keys()) == [0, 1, 2]
+    a[2] = 5
+    assert list(a.keys()) == [0, 2, 1]
 
 
 def test_orderable_mapping_custom_key_cant_be_set_after_instantiation():
