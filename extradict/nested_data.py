@@ -21,7 +21,10 @@ class _NestedBase:
         return parts
 
     @classmethod
-    def wrap(cls, obj):
+    def wrap(cls, obj, clean=True):
+        # clean:  ensures nested components are not wrapped.
+        if clean:
+            obj = cls.unwrap(obj, recurse=True)
         if isinstance(obj, __class__):
             return obj
         new_cls = _find_best_container([obj])
@@ -33,8 +36,13 @@ class _NestedBase:
         return obj
 
     @classmethod
-    def unwrap(cls, obj):
-        return obj if not isinstance(obj, __class__) else item.data
+    def unwrap(cls, obj, recurse=False):
+        obj = obj if not isinstance(obj, __class__) else obj.data
+        if recurse and isinstance(obj, (Mapping, Sequence)) and not isinstance(obj, _strings):
+            items = obj.items() if isinstance(obj, Mapping) else enumerate(obj)
+            for key, value in items:
+                obj[key] = cls.unwrap(value, recurse)
+        return obj
 
     def __eq__(self, other):
         return self.data == self.unwrap(other)
@@ -226,6 +234,9 @@ class _NestedList(_NestedBase, MutableSequence):
             index, subpath = self._get_next_component(index)
         else:
             subpath = None
+        if index == "*":
+            result = [(comp[subpath] if subpath else comp) for comp in self]
+            return self.wrap(result)
         wrapped = self.wrap(self.data[int(index)])
         if subpath:
             return wrapped[subpath]
