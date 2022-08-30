@@ -5,6 +5,17 @@ This attempts to be a small package with no dependencies,
 just delivering its data-types as described bellow
 enough tested for production-usage.
 
+ ## What is new in v. 0.7
+
+  - NestedData now can retrieve all records from  a list subpath if
+ "*" is given as the list index. eg, "company.clients.*.address.city" will
+ retrive a NestedData sequence containing all cities in the original
+ structure.
+
+
+## ExtraDict data structures:
+  Bellow, a list, in order of implementation, of the public classes
+  implemented in this package:
 
 ## VersionDict
 
@@ -223,7 +234,7 @@ is passed in the key.
 
 Primary use case if for keeping translation strings when the source
 for the original strings is loose in terms of whitespace/punctuation
-(for example, in an http snippet)
+(for example, in an html snippet)
 
 
 ## NormalizedDict

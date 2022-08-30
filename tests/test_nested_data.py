@@ -270,3 +270,24 @@ def test_nested_data_sequence_append_l2():
     a["b"].append(40)
     assert a["b.3"] == 40
 
+
+
+# we dont want this behavior. Assign a list to the parent key instead.
+#def test_nested_data_new_key_ending_in_int_creates_new_list():
+    #a = NestedData()
+    #a["a.0"] = 23
+    #assert a["a"].data == [23]
+
+#def test_nested_data_new_key_containing_int_creates_new_list():
+    #a = NestedData()
+    #a["a.0.b"] = 23
+    #assert a["a"].data == [{"b": 23}]
+
+def test_sequence_with_asterisk_in_index_yields_sequence_with_all_leaves():
+    x = NestedData({"a": [{"b": i} for i in range(5)]})
+    assert list(range(5)) == [y["b"] for y in x["a.*"]]
+
+def test_sequence_with_asterisk_in_index_items_are_unwrapped():
+    x = NestedData({"a": [{"b": i} for i in range(5)]})
+    assert not isinstance(x["a.*"].data[0], NestedData)
+    assert isinstance(x["a.*"].data[0], dict)
