@@ -5,10 +5,15 @@ from collections.abc import MutableSet
 START = "\ufffe"
 END = "\uffff"
 
-class CharTrie(MutableSet):
+class PrefixCharTrie(MutableSet):
     """ A prefix-based Trie for strings with a Set interface.
 
     use "CharTrie[prefix].contents" to retrieve a set of all strings with the given prefix
+
+    CharTrie[prefix] will return another instance of CharTrie **that shares** the same underlying
+    data to the parent trie: additions or deletions will reflect on the parent and other siblings.
+
+    Use `CharTrie[prefix].copy()` to have an independent data structure.
     """
     def __init__(self, initial=None, *, root=None, prefix=""):
         self.data = root if root is not None else {}
@@ -47,6 +52,8 @@ class CharTrie(MutableSet):
         return results
 
     def add(self, key):
+        if START in key or END in key:
+            raise ValueError("Invalid character in key")
         key = key + END
         prefix = self.prefix
         for letter in key:
@@ -54,6 +61,15 @@ class CharTrie(MutableSet):
             prefix = prefix + letter
             branch.add(letter)
         self.data[prefix] = END
+
+    def copy(self):
+        cls = type(self)
+        return cls(self.contents)
+
+    def __copy__(self):
+        from copy import copy
+        new_instance = type(self)(prefix=self.prefix, root=self.data.copy())
+        return new_instance
 
     def __contains__(self, key):
         return self.data.get(key + END, None) == END
@@ -77,3 +93,4 @@ class CharTrie(MutableSet):
     def __repr__(self):
         return f"Trie {('prefixed with ' + repr(self.prefix)) if self.prefix else ''} with {len(self)} elements."
 
+CharTrie = PrefixCharTrie

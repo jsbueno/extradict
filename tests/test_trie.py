@@ -23,3 +23,26 @@ def test_chartrie_update_works():
 def test_chartrie_len_works():
     a = CharTrie(initial=["car", "carpet", "banana"])
     assert len(a) == 3
+
+def test_modifying_prefixed_tree_updates_original():
+    from copy import copy
+    a = CharTrie(initial=["car"])
+    assert len(a) == 1
+    a["car"].add("pet")
+    assert len(a) == 2
+    assert "carpet" in a
+    assert "pet" not in a
+    assert "carpet" in a["car"]
+
+
+def test_shallow_copy_creates_indepent_chartrie():
+    from copy import copy
+    a = CharTrie(initial=["car"])
+    b = copy(a)
+    b.add("carpet")
+    assert len(b) == 2
+    assert len(a) == 1
+    assert "carpet" not in a
+
+
+
