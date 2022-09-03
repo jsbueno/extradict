@@ -82,13 +82,29 @@ def test_copy_method_creates_indepent_chartrie(cls):
     assert len(a) == 1
     assert "carpet" not in a
 
-@pytest.mark.skip
+@pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
+def test_contains_method(cls):
+    a = cls(initial=["car", "carpet", "bot"])
+    assert "car" in a and "carpet" in a and "bot" in a
+    assert "carp" not in a and "c" not in a and "bo" not in a
+
 @pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
 def test_discard_method(cls):
     a = cls(initial=["car", "carpet"])
     a.discard("car")
     assert len(a) == 1
     assert "car" not in a and "carpet" in a
+
+@pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
+@pytest.mark.parametrize("payload", [("car", "carpet"), ("car", "bot")])  # second payload: no letters in common
+def test_chartrie_discard_restores_data_structure(cls, payload):
+    a = cls(initial=payload[:1])
+    original = a.data.copy()
+    a.update(payload[1:])
+    for word in payload[1:]:
+        a.discard(word)
+    assert a.data == original
+    pass
 
 
 def test_pattern_chartrie_simple_prefix_works():

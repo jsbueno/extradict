@@ -5,6 +5,16 @@ from collections.abc import MutableSet
 _WORD_END = "\ufffe"
 _ENTRY_END = "\uffff"
 
+# ROADMAP
+"""
+- Fix discard methods [DONE]
+- Make a "normalized" version which can work casee insensitive and unicode normalized text
+- Reduce memory usage.
+    - (current idea: use strings instead of sets to hold data - compare performance)
+
+- RELEASE
+"""
+
 class PrefixCharTrie(MutableSet):
     """ A prefix-based Trie for strings with a Set interface.
 
@@ -59,7 +69,7 @@ class PrefixCharTrie(MutableSet):
             branch  = self.data.setdefault(pattern, set())
             pattern = pattern + letter
             branch.add(letter)
-        self.data[pattern] = _WORD_END
+        self.data[pattern] = {_WORD_END}
 
     def copy(self):
         cls = type(self)
@@ -70,15 +80,35 @@ class PrefixCharTrie(MutableSet):
         return new_instance
 
     def __contains__(self, key):
-        return self.data.get(key + _WORD_END, None) == _WORD_END
+        return _WORD_END in self.data.get(key + _WORD_END, set())
 
     def discard(self, key):
-        # FIXME: this removes the complete key, but various "unfinshed prefixes"
-        # that would lead to the discarded key remain in self.data
-        if key + _WORD_END not in self.data:
+        key += _WORD_END
+        if key not in self.data:
             raise KeyError()
-        del self.data[key + _WORD_END]
-        self.data[key].remove(_WORD_END)
+        to_remove_paths = []
+        to_remove_entries = []
+        prefix = ""
+        parent = self.data.get(prefix, set())
+        seem_one = False
+        for char in key:
+            prefix += char
+            current = self.data.get(prefix, set())
+            if len(current) <= 1:
+                seem_one = True
+                if prefix[:-1] not in to_remove_entries:
+                    to_remove_paths.append((prefix[:-1], char))
+                to_remove_entries.append(prefix)
+            elif len(current) > 1 and seem_one:
+                to_remove_paths.clear()
+                to_remove_entries.clear()
+                seem_one = False
+            parent = current
+
+        for path, char in to_remove_paths:
+            self.data[path].discard(char)
+        for entry in to_remove_entries:
+            del self.data[entry]
 
     def update(self, seq):
         for item in seq:
@@ -125,7 +155,6 @@ class PatternCharTrie(PrefixCharTrie):
         if self.pattern:
             raise ValueError("PatternCharTrie cannot add new final values having a selected pattern")
 
-        pattern = ""
         for i in range(len(key)):
             self._subpattern_add(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
 
@@ -146,9 +175,41 @@ class PatternCharTrie(PrefixCharTrie):
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
 
+    def _subpattern_discard(self, key):
+        to_remove_paths = []
+        to_remove_entries = []
+        prefix = ""
+        parent = self.data.get(prefix, set())
+        seem_one = False
+        for char in key:
+            prefix += char
+            current = self.data.get(prefix, set())
+            if len(current) <= 1:
+                seem_one = True
+                if prefix[:-1] not in to_remove_entries:
+                    to_remove_paths.append((prefix[:-1], char))
+                to_remove_entries.append(prefix)
+            elif len(current) > 1 and seem_one:
+                to_remove_paths.clear()
+                to_remove_entries.clear()
+                seem_one = False
+            parent = current
+
+        for path, char in to_remove_paths:
+            self.data[path].discard(char)
+        for entry in to_remove_entries:
+            self.data.pop(entry, None)
 
     def discard(self, key):
-        raise NotImplementedError()
+        # key += _WORD_END
+        # if key + _WORD_END not in self.data:
+            #raise KeyError()
+
+        for i in range(len(key)):
+            self._subpattern_discard(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
+
+    def __contains__(self, key):
+        return _ENTRY_END in self.data.get(key, set())
 
 
     def __repr__(self):
