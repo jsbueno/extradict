@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from collections.abc import Mapping
 
-_py36 = sys.version_info.major >= 3 and sys.version_info.minor >= 6
+_py36 = sys.version_info.major == 3 and sys.version_info.minor >= 6 or sys.version_info.major > 3
 
 def namedtuple(name, attrs):
     """
