@@ -104,8 +104,6 @@ def test_chartrie_discard_restores_data_structure(cls, payload):
     for word in payload[1:]:
         a.discard(word)
     assert a.data == original
-    pass
-
 
 def test_pattern_chartrie_simple_prefix_works():
     a = PatternCharTrie(initial=["car", "carpet", "oscar"])

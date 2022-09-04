@@ -60,16 +60,21 @@ class PrefixCharTrie(MutableSet):
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
 
+    def _subpattern_add(self, key, pattern=""):
+        if len(key) < 2:
+            return
+        for char in key:
+            branch  = self.data.setdefault(pattern, set())
+            pattern += char
+            branch.add(char)
+        return pattern
+
     def add(self, key):
         if _ENTRY_END in key or _WORD_END in key:
             raise ValueError("Invalid character in key")
         key = key + _WORD_END
-        pattern = self.pattern
-        for letter in key:
-            branch  = self.data.setdefault(pattern, set())
-            pattern = pattern + letter
-            branch.add(letter)
-        self.data[pattern] = {_WORD_END}
+        final_pattern = self._subpattern_add(key, self.pattern)
+        self.data[final_pattern] = {_WORD_END}
 
     def copy(self):
         cls = type(self)
@@ -82,10 +87,7 @@ class PrefixCharTrie(MutableSet):
     def __contains__(self, key):
         return _WORD_END in self.data.get(key + _WORD_END, set())
 
-    def discard(self, key):
-        key += _WORD_END
-        if key not in self.data:
-            raise KeyError()
+    def _subpattern_discard(self, key):
         to_remove_paths = []
         to_remove_entries = []
         prefix = ""
@@ -108,7 +110,13 @@ class PrefixCharTrie(MutableSet):
         for path, char in to_remove_paths:
             self.data[path].discard(char)
         for entry in to_remove_entries:
-            del self.data[entry]
+            self.data.pop(entry, None)
+
+    def discard(self, key):
+        key += _WORD_END
+        if key not in self.data:
+            raise KeyError()
+        self._subpattern_discard(key)
 
     def update(self, seq):
         for item in seq:
@@ -139,19 +147,9 @@ class PatternCharTrie(PrefixCharTrie):
     Use `PatternCharTrie[prefix].copy()` to have an independent data structure.
     """
 
-    def _subpattern_add(self, key):
-        if len(key) < 2:
-            return
-        pattern = ""
-        for char in key:
-            branch  = self.data.setdefault(pattern, set())
-            pattern += char
-            branch.add(char)
-
     def add(self, key):
         if _ENTRY_END in key or _WORD_END in key:
             raise ValueError("Invalid character in key")
-
         if self.pattern:
             raise ValueError("PatternCharTrie cannot add new final values having a selected pattern")
 
@@ -175,35 +173,9 @@ class PatternCharTrie(PrefixCharTrie):
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
 
-    def _subpattern_discard(self, key):
-        to_remove_paths = []
-        to_remove_entries = []
-        prefix = ""
-        parent = self.data.get(prefix, set())
-        seem_one = False
-        for char in key:
-            prefix += char
-            current = self.data.get(prefix, set())
-            if len(current) <= 1:
-                seem_one = True
-                if prefix[:-1] not in to_remove_entries:
-                    to_remove_paths.append((prefix[:-1], char))
-                to_remove_entries.append(prefix)
-            elif len(current) > 1 and seem_one:
-                to_remove_paths.clear()
-                to_remove_entries.clear()
-                seem_one = False
-            parent = current
-
-        for path, char in to_remove_paths:
-            self.data[path].discard(char)
-        for entry in to_remove_entries:
-            self.data.pop(entry, None)
-
     def discard(self, key):
-        # key += _WORD_END
-        # if key + _WORD_END not in self.data:
-            #raise KeyError()
+        if key not in self:
+            raise KeyError()
 
         for i in range(len(key)):
             self._subpattern_discard(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
