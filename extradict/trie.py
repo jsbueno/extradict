@@ -10,10 +10,50 @@ _ENTRY_END = "\uffff"
 - Fix discard methods [DONE]
 - Make a "normalized" version which can work casee insensitive and unicode normalized text
 - Reduce memory usage.
-    - (current idea: use strings instead of sets to hold data - compare performance)
+    - (current idea: use strings instead of sets to hold data - compare performance) [done: trie sizes cut in half. Not impressive]
 
 - RELEASE
 """
+
+class _StringSet(MutableSet):
+    """Inner class: implements the set interface keeping character data in a string:
+    can be two orders of magnitude more compact than an equivalent `set`.
+
+    All items MUST be a one-char string.
+    """
+    __slots__ = ("data",)
+    def __init__(self, initial=None, *, data=""):
+        self.data = data
+        if initial:
+            self.update(initial)
+
+    def update(self, items):
+        for item in items:
+            self.add(item)
+
+    def __contains__(self, item):
+        # if len(item) != 1: raise ValueError()
+        return item in self.data
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __len__(self):
+        return len(self.data)
+
+    def add(self, item):
+        #if not isinstance(item, str) or len(item) != 1:
+            #raise ValueError(f"Invalid item type for {type(self).__name__}")
+        if item not in self.data:
+            self.data += item
+
+    def discard(self, item):
+        position = self.data.index(item)
+        self.data = self.data[:position] + self.data[position + 1:]
+
+    def __repr__(self):
+        return f"{type(self).__name__}({{{', '.join(repr(c) for c in self.data)}}})"
+
 
 class PrefixCharTrie(MutableSet):
     """ A prefix-based Trie for strings with a Set interface.
@@ -28,11 +68,13 @@ class PrefixCharTrie(MutableSet):
     The main reason for keeping this class separate from "PatternCharTrie" is that
     it is much more compact, being about 10X smaller.
     """
+    _container_cls = _StringSet
+
     def __init__(self, initial=None, *, root=None, pattern=""):
         self.data = root if root is not None else {}
         self.pattern = pattern
         if not pattern in self.data:
-            self.data[pattern] = set()
+            self.data[pattern] = self._container_cls()
 
         if initial:
             self.update(initial)
@@ -67,7 +109,7 @@ class PrefixCharTrie(MutableSet):
         if len(key) < 2:
             return
         for char in key:
-            branch  = self.data.setdefault(pattern, set())
+            branch  = self.data.setdefault(pattern, self._container_cls())
             pattern += char
             branch.add(char)
         return pattern
