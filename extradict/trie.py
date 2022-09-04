@@ -24,6 +24,9 @@ class PrefixCharTrie(MutableSet):
     data to the parent trie: additions or deletions will reflect on the parent and other siblings.
 
     Use `CharTrie[prefix].copy()` to have an independent data structure.
+
+    The main reason for keeping this class separate from "PatternCharTrie" is that
+    it is much more compact, being about 10X smaller.
     """
     def __init__(self, initial=None, *, root=None, pattern=""):
         self.data = root if root is not None else {}
