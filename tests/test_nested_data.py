@@ -291,3 +291,53 @@ def test_sequence_with_asterisk_in_index_items_are_unwrapped():
     x = NestedData({"a": [{"b": i} for i in range(5)]})
     assert not isinstance(x["a.*"].data[0], NestedData)
     assert isinstance(x["a.*"].data[0], dict)
+
+def test_sequence_root_can_be_merged():
+    x = NestedData([{'color': 'red', 'value': '#f00'}, {'color': 'green', 'value': '#0f0'}, {'color': 'blue', 'value': '#00f'}])
+    y = NestedData([{"realm": "earth"} for _ in range(len(x))])
+    z = [
+        {'color': 'red', 'value': '#f00', 'realm': 'earth'},
+        {'color': 'green', 'value': '#0f0', 'realm': 'earth'},
+        {'color': 'blue', 'value': '#00f', 'realm': 'earth'},
+    ]
+    x.merge(y)
+    assert x.data == z
+
+@pytest.mark.parametrize(("merge_length", "success"), [(2, False), (4, False), (1, True), (3, True)])
+def test_sequence_merge_raises_on_different_lengths(merge_length, success):
+    x = NestedData([{'color': 'red', 'value': '#f00'}, {'color': 'green', 'value': '#0f0'}, {'color': 'blue', 'value': '#00f'}])
+    y = NestedData([{"realm": "earth"} for _ in range(merge_length)])
+    z = [
+        {'color': 'red', 'value': '#f00', 'realm': 'earth'},
+        {'color': 'green', 'value': '#0f0', 'realm': 'earth'},
+        {'color': 'blue', 'value': '#00f', 'realm': 'earth'},
+    ]
+
+    if not success:
+        with pytest.raises(ValueError):
+            x.merge(y)
+    else:
+        x.merge(y)
+        assert x.data == z
+
+def test_deep_sequence_can_be_merged_with_path():
+    x = NestedData({"colors": [{'color': 'red', 'value': '#f00'}, {'color': 'green', 'value': '#0f0'}, {'color': 'blue', 'value': '#00f'}]})
+    y = NestedData([{"realm": "earth"} for _ in range(len(x))])
+    z = [
+        {'color': 'red', 'value': '#f00', 'realm': 'earth'},
+        {'color': 'green', 'value': '#0f0', 'realm': 'earth'},
+        {'color': 'blue', 'value': '#00f', 'realm': 'earth'},
+    ]
+    x.merge(y, path="colors")
+    assert x.data["colors"] == z
+
+def test_deep_sequence_can_be_merged():
+    x = NestedData({"colors": [{'color': 'red', 'value': '#f00'}, {'color': 'green', 'value': '#0f0'}, {'color': 'blue', 'value': '#00f'}]})
+    y = NestedData({"colors": [{"realm": "earth"} for _ in range(len(x["colors"]))]})
+    z = [
+        {'color': 'red', 'value': '#f00', 'realm': 'earth'},
+        {'color': 'green', 'value': '#0f0', 'realm': 'earth'},
+        {'color': 'blue', 'value': '#00f', 'realm': 'earth'},
+    ]
+    x.merge(y, path="colors")
+    assert x.data["colors"] == z

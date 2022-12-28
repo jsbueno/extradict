@@ -169,8 +169,12 @@ class _NestedDict(_NestedBase, MutableMapping):
                 subitem = self[key]
                 for sub_key, sub_value in value.items():
                     subitem._setitem(sub_key, sub_value, merging)
-            return
-        self.data[key] = value
+        elif isinstance(self.data[key], Sequence) and not isinstance(self.data[key], _strings):
+            if isinstance(value, Mapping) and key in value:
+                value = value[key]
+            self[key].merge(value)
+        else:
+            self.data[key] = value
 
     def __delitem__(self, key):
         if key in self.data:
@@ -278,9 +282,19 @@ class _NestedList(_NestedBase, MutableSequence):
 
     def merge(self, data, path=None):
         data = self.unwrap(data)
-        if path is None:
-            path = ""
-        if isinstance(path, str):
+        if path in (None, ""):
+            if isinstance(data, Sequence) and not isinstance(data, _strings):
+                if len(self) != len(data):
+                    if len(data) == 1:
+                        data = [deepcopy(data[0]    ) for _ in range(len(self))]
+                    else:
+                        raise ValueError(f"Sequences to merge are not same size. len(self) == {len(self)}, len(data) == {len(data)}")
+                for item, data_item in zip(self, data):
+                    if isinstance(item, NestedData):
+                        item.merge(data_item)
+                return self
+            raise ValueError("Trying to merge a mapping into a sequence")
+        elif isinstance(path, str):
             key, subpath = self._get_next_component(path)
             if not key:
                 raise IndexError("No index to perform merging on")
