@@ -1,4 +1,5 @@
 from collections.abc import Mapping, Sequence
+from copy import deepcopy
 
 from extradict import NestedData
 from extradict.nested_data import _NestedDict, _NestedList
@@ -341,3 +342,38 @@ def test_deep_sequence_can_be_merged():
     ]
     x.merge(y, path="colors")
     assert x.data["colors"] == z
+
+
+def test_sequence_accepts_slices_as_indexes_for_reading():
+    x = NestedData([{"b": i} for i in range(5)])
+    assert x[2:4].data == x.data[2:4]
+
+def test_sequence_accepts_slices_as_indexes_for_deleting():
+    x = NestedData([{"b": i} for i in range(5)])
+    y = deepcopy(x.data)
+    del y[2:4]
+    del x[2:4]
+    assert x.data == y
+
+def test_sequence_accepts_slices_as_indexes_for_writting():
+    x = NestedData([{"b": i} for i in range(5)])
+    y = [{"b": 10}, {"b": 11}]
+    z = deepcopy(x.data)
+    x[2:4] = deepcopy(y)
+    z[2:4] = y
+    assert x.data == z
+
+def test_nested_data_can_handle_path_components_as_tuples_1():
+    a = NestedData({("person.address.city"): "São Paulo"})
+    assert a["person", "address", "city"] == "São Paulo"
+
+def test_nested_data_can_handle_path_components_as_tuples_2():
+    a = NestedData({("person", "address", "city"): "São Paulo"})
+    assert a["person.address.city"] == "São Paulo"
+
+def test_nested_data_can_handle_path_components_as_tuples_3():
+    a = NestedData({("person", "address"): []})
+    a["person", "address"].append("test")
+    assert a["person", "address", "0"]
+    assert a["person", "address", 0]
+

@@ -15,9 +15,14 @@ class _NestedBase:
     def _get_next_component(key):
         if key is None:
             return None, None
-        parts = key.split(".", 1)
+        if isinstance(key, _strings):
+            parts = key.split(".", 1)
+        elif len(key) >= 2:
+            parts = key[0], key[1:]
+        else:
+            parts = key
         if len(parts) == 1 :
-            return (parts[0] if parts[0] else None), None
+            return (parts[0] if parts[0] or parts[0] == 0 else None), None
         return parts
 
     @classmethod
@@ -234,6 +239,8 @@ class _NestedList(_NestedBase, MutableSequence):
 
     def __getitem__(self, index):
         #No sense in accepting "*": just take the whole list.
+        if isinstance(index, slice):
+            return self.__class__(self.data[index])
         if not isinstance(index, int):
             index, subpath = self._get_next_component(index)
         else:
@@ -247,6 +254,9 @@ class _NestedList(_NestedBase, MutableSequence):
         return wrapped
 
     def __setitem__(self, index, item):
+        if isinstance(index, slice):
+            self.data[index] = item
+            return
         if not isinstance(index, int):
             index, subpath = self._get_next_component(index)
         else:
@@ -264,6 +274,9 @@ class _NestedList(_NestedBase, MutableSequence):
             self.wrap(self[index])[subpath] = item
 
     def __delitem__(self, index):
+        if isinstance(index, slice):
+            del self.data[index]
+            return
         if not isinstance(index, int):
             index, subpath = self._get_next_component(index)
         else:
@@ -321,7 +334,7 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
         return False
     if isinstance(obj, Set):
         return True
-    if all(isinstance(k, int) or k.isdigit() for k in obj.keys()):
+    if all(isinstance(k, int) or (isinstance(k, _strings) and k.isdigit()) for k in obj.keys()):
         if default:
             return True
         if len(set(map(int, obj.keys()))) == len(obj) and 0 in obj or "0" in obj:
