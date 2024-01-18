@@ -18,7 +18,7 @@ True
 >>> x._fields
 ('a', 'b')
 >>> y._asdict()
-OrderedDict([('a', 1), ('b', 2)])
+OrderedDict({'a': 1, 'b': 2})
 >>> x = namedtuple("x", ("a", "b", "c", "d"))
 >>> x._fields
 ('a', 'b', 'c', 'd')
@@ -42,7 +42,7 @@ True
 >>> x._fields
 ('a', 'b')
 >>> y._asdict()
-OrderedDict([('a', 1), ('b', 2)])
+OrderedDict({'a': 1, 'b': 2})
 
 >>> from extradict import defaultnamedtuple
 >>> zz = defaultnamedtuple("zz", [("a", 1), ("b", 2), ("c", "3")]    )

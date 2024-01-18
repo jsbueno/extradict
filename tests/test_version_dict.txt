@@ -142,7 +142,7 @@ a
 ('a', 6)
 >>> x = OVD([("a", 0), ("b", 1), ("c", 2)])
 >>> x.freeze()
-OrderedDict([('a', 0), ('b', 1), ('c', 2)])
+OrderedDict({'a': 0, 'b': 1, 'c': 2})
 >>> x["a"] = 3
 >>> x["d"] = 4
 >>> list(x.copy(version=1).keys())
