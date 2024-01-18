@@ -81,7 +81,7 @@ class _NestedBase:
                 return "[{}]".format(indent_content(repr(self[0])) + (f"\n...\nx {len(self)}\n" if len(self) > 1 else ""))
             else:
                 return repr(list(self))
-        #return f"NestedData({self.data!r})"
+
 
 
 class _NestedDict(_NestedBase, MutableMapping):

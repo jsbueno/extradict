@@ -2,7 +2,7 @@ from collections.abc import Mapping
 
 
 class TransformKeyDict(Mapping):
-    """Special mapping that algoritmically modifies the key pased in.
+    """Special mapping that algoritmicaly modifies the key passed in.
 
     Change the "transform" attribute after instantiating or sublassing.
     The main purpose of presenting this is to have a mapping interface,
