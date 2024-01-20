@@ -70,7 +70,7 @@ class PrefixCharTrie(MutableSet):
         return new_instance
 
     def __contains__(self, key):
-        return self.data.get(key + _WORD_END, None) == _WORD_END
+        return _ENTRY_END in self.data.get(key, set())
 
     def discard(self, key):
         # FIXME: this removes the complete key, but various "unfinshed prefixes"

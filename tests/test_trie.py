@@ -94,3 +94,12 @@ def test_discard_method(cls):
 def test_pattern_chartrie_simple_prefix_works():
     a = PatternCharTrie(initial=["car", "carpet", "oscar"])
     assert a["car"].contents == {"car", "carpet", "oscar"}
+
+def test_pattern_chartrie_contains_works():
+    a = PatternCharTrie(initial=["car", "carpet", "oscar"])
+    assert "car" in a
+    assert "carpet" in a
+    assert "oscar" in a
+    assert "ca" not in a
+    assert "scar" not in a
+    assert "arpe" not in a
