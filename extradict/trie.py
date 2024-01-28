@@ -70,7 +70,7 @@ class PrefixCharTrie(MutableSet):
         return new_instance
 
     def __contains__(self, key):
-        return _ENTRY_END in self.data.get(key, set())
+        return self.data.get(key + _WORD_END, None) == _WORD_END
 
     def discard(self, key):
         # FIXME: this removes the complete key, but various "unfinshed prefixes"
@@ -150,6 +150,8 @@ class PatternCharTrie(PrefixCharTrie):
     def discard(self, key):
         raise NotImplementedError()
 
+    def __contains__(self, key):
+        return _ENTRY_END in self.data.get(key, set())
 
     def __repr__(self):
         return f"PatternTrie {('patterned with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
