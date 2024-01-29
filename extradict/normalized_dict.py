@@ -9,6 +9,7 @@ just lower case letters and digits, with punctuation and whitespace removed.
 """
 
 from collections.abc import MutableMapping
+from threading import RLock
 
 import re
 import unicodedata
@@ -45,7 +46,7 @@ class Normalizer:
 SENTINEL = object()
 
 
-class FallbackNormalizedDict(MutableMapping, Normalizer):
+class _FallbackNormalizedDict(MutableMapping, Normalizer):
     """Dictionary meant for text only keys:
     will normalize keys in a way that capitalization, whitespace and
     punctuation will be ignored when retrieving items.
@@ -57,7 +58,7 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
 
     Primary use case if for keeping translation strings when the source
     for the original strings is loose in terms of whitespace/punctuation
-    (for example, in an html snippet)
+    (for example, in a html snippet)
     """
 
     def __init__(self, *args, **kw):
@@ -75,7 +76,97 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
         self.normalized[self.normalize(key)] = value
 
     def __delitem__(self, key):
-        raise NotImplementedError("""Deleting from FallbackNormalizedDict is not implemented""")
+        if key in self.literal:
+            original_value = self.literal.pop(key)
+        else:
+            raise KeyError(key)
+        norm_key = self.normalize(key)
+        values = self.normalized[norm_key]
+        values.remove(original_value)
+
+    def __iter__(self):
+        return self.literal.__iter__()
+
+    def __len__(self):
+        return len(self.literal)
+
+    def normalized_keys(self):
+        return self.normalized.keys()
+
+    def __repr__(self):
+        return "{}({})".format(
+            self.__class__.__name__,
+            repr(self.literal)
+        )
+
+
+class FallbackNormalizedDict(MutableMapping, Normalizer):
+    """Dictionary meant for text only keys:
+    will normalize keys in a way that capitalization, whitespace and
+    punctuation will be ignored when retrieving items.
+
+    Multiple values set with keys that map to the same value
+    are kept, and a list of all values set is returned
+    on `__getitem__`.
+
+
+    It is used internally by extradict.trie.NormalizedTrie so that
+    similar words like "maçã" and "maca" can be part of the same
+    trie, cohexist, and be both retrievable by the normalized form "maca"
+    """
+
+    def __init__(self, *args, **kw):
+        self.lock = RLock()
+        self.literal = dict(*args, **kw)
+        self.normalized = {}
+        self._update(self.literal)
+
+    def _update(self, data):
+        normalized = self.normalized
+        for key, value in data.items():
+            self._setitem(key, value)
+
+    def get_multi(self, key, default=SENTINEL):
+        """Retrieves a list with all values associated the normalized form of the key"""
+        return self.normalized.get(self.normalize(key), default if default is not SENTINEL else [])
+
+    def __getitem__(self, key):
+        result = self.literal.get(key, SENTINEL)
+        if result != SENTINEL:
+            return result
+        try:
+            return self.normalized[self.normalize(key)][0]
+        except IndexError:
+            raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        prev = SENTINEL
+        with self.lock:
+            if key in self.literal:
+                prev = self.literal.pop(key)
+            self.literal[key] = value
+            self._setitem(key, value, prev)
+        return
+
+    def _setitem(self, key, value, prev=SENTINEL):
+        with self.lock:
+            norm_key = self.normalize(key)
+            if prev is not SENTINEL:
+                index = self.normalized[norm_key].index(prev)
+                self.normalized[norm_key][index] = value
+            else:
+                self.normalized.setdefault(norm_key, []).append(value)
+        return
+
+    def __delitem__(self, key):
+        with self.lock:
+            if key in self.literal:
+                original_value = self.literal.pop(key)
+            else:
+                raise KeyError(f"For deleting, the exact key used to set a value must be used. {key} not found")
+            norm_key = self.normalize(key)
+            values = self.normalized[norm_key]
+            values.remove(original_value)
 
     def __iter__(self):
         return self.literal.__iter__()

@@ -39,10 +39,18 @@ def test_fallbacknormalized_removes_puntuation():
     assert a["Merry Christmas"]
 
 
-def test_fallbacknormalized_does_not_allow_deleting():
+def test_fallbacknormalized_deleting():
     a = FallbackNormalizedDict(maçã=1)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(KeyError):
         del a["maca"]
+    del a["maçã"]
+    assert "maçã" not in a
+
+def test_fallbacknormalized_get_multi():
+    a = FallbackNormalizedDict(maçã=1, maca=2)
+    assert a["maca"] == 2
+    assert a["maçã"] == 1
+    assert a.get_multi("maca") == [1, 2]
 
 # strip_replacer = lambda text: re.sub(r"\W", "", text)
 # unicode_normalizer = lambda text: unicodedata.normalize("NFKD", text)

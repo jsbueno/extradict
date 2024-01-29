@@ -61,10 +61,13 @@ class PrefixCharTrie(MutableSet):
             if item == _WORD_END:  # It is not because it is used as a singleton around
                              # that one can use "is": once merged to a string and sliced
                              # from there you have new instances. (thanks unit tests!)
-                results.add(pattern)
+                results.update(self._expand(pattern))
                 continue
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
+
+    def _expand(self, pattern):
+        return {pattern}
 
     def add(self, key):
         if _ENTRY_END in key or _WORD_END in key:
@@ -182,17 +185,6 @@ class PatternCharTrie(PrefixCharTrie):
                 # are used by more words.
                 # we just leave them there!
 
-                #if not self.data[partial]:
-                    #del self.data[partial]
-                    ## no other word leading here, means
-                    ## all partial paths are also part of the word being discarded
-                    #for path in paths:
-                        #prefix, target = path[:-1], path[-1]
-                        #self.data[prefix].remove(target)
-                        #if not self.data[prefix] and prefix != "":
-                            #del self.data[prefix]
-
-
     def __contains__(self, key):
         return _ENTRY_END in self.data.get(key, set())
 
@@ -213,7 +205,6 @@ class NormalizedTrie(PatternCharTrie):
         new_key = self.normalized.normalize(key)
         super().add(new_key)
 
-
     def __copy__(self):
         new = super().__copy__()
         new.normalized = copy(self.normalized)
@@ -224,6 +215,13 @@ class NormalizedTrie(PatternCharTrie):
         new.normalized = copy(self.normalized)
         return new
 
+    def _expand(self, pattern):
+        return self.normalized.get_multi(pattern)
+
+    def discard(self, key):
+        raise NotImplementedError()
+
     @property
     def contents(self):
         return {self.normalized[item] for item in super().contents}
+
