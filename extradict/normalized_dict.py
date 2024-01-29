@@ -57,7 +57,7 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
 
     Primary use case if for keeping translation strings when the source
     for the original strings is loose in terms of whitespace/punctuation
-    (for example, in an http snippet)
+    (for example, in an html snippet)
     """
 
     def __init__(self, *args, **kw):

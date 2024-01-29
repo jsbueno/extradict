@@ -1,6 +1,9 @@
+from collections.abc import MutableSet
+from copy import copy
 from threading import Lock
 
-from collections.abc import MutableSet
+
+from .normalized_dict import FallbackNormalizedDict as NormalizedDict
 
 # These two are officially stated by Unicode as "not characters".
 # will do fine as sentinels:
@@ -34,7 +37,17 @@ class PrefixCharTrie(MutableSet):
                 pattern += letter
                 continue
             return self.__class__()
-        return self.__class__(root=self.data, pattern = pattern)
+        with self.lock:
+            sub_instance = self._clone()
+        sub_instance.pattern = pattern
+        return sub_instance
+
+    def _clone(self):
+        new = self.__class__.__new__(self.__class__)
+        new.data = self.data
+        new.lock = self.lock
+        new.pattern = self.pattern
+        return new
 
     @property
     def contents(self):
@@ -93,7 +106,6 @@ class PrefixCharTrie(MutableSet):
 
     def __len__(self):
         return len(self.contents)
-
 
     def __repr__(self):
         return f"Trie {('prefixed with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
@@ -186,3 +198,32 @@ class PatternCharTrie(PrefixCharTrie):
 
     def __repr__(self):
         return f"PatternTrie {('patterned with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
+
+
+class NormalizedTrie(PatternCharTrie):
+    def __init__(self, *args, **kwargs):
+        self.normalized = NormalizedDict()
+        super().__init__(*args, **kwargs)
+
+    def __contains__(self, key):
+        return key in self.normalized.literal
+
+    def add(self, key):
+        self.normalized[key] = key
+        new_key = self.normalized.normalize(key)
+        super().add(new_key)
+
+
+    def __copy__(self):
+        new = super().__copy__()
+        new.normalized = copy(self.normalized)
+        return new
+
+    def _clone(self):
+        new = super().__copy__()
+        new.normalized = copy(self.normalized)
+        return new
+
+    @property
+    def contents(self):
+        return {self.normalized[item] for item in super().contents}
