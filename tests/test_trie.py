@@ -37,10 +37,9 @@ def test_chartrie_update_works(cls):
 
 
 @pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
-def test_chartrie_raises_on_non_existing_pattern(cls):
+def test_chartrie_returns_empty_on_non_existing_pattern(cls):
     a = cls(initial=["car", "carpet"])
-    with pytest.raises(KeyError):
-        a["java"]
+    assert len(a["java"]) == 0
 
 @pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
 @pytest.mark.parametrize("sentinel", [_WORD_END,  _ENTRY_END])
@@ -82,13 +81,47 @@ def test_copy_method_creates_indepent_chartrie(cls):
     assert len(a) == 1
     assert "carpet" not in a
 
-@pytest.mark.skip
-@pytest.mark.parametrize("cls", (PrefixCharTrie, PatternCharTrie))
-def test_discard_method(cls):
-    a = cls(initial=["car", "carpet"])
+
+def test_discard_method_prefixtrie():
+    a = PrefixCharTrie(initial=["car", "carpet"])
     a.discard("car")
     assert len(a) == 1
     assert "car" not in a and "carpet" in a
+
+
+def test_discard_method_patterntrie_single_element():
+    a = PatternCharTrie(initial=["car"])
+    a.discard("car")
+    assert len(a) == 0
+    assert "car" not in a
+    assert len(a["ar"]) == 0
+    assert len(a["car"]) == 0
+
+
+def test_discard_method_patterntrie_element_postfix():
+    a = PatternCharTrie(initial=["car", "carpet"])
+    a.discard("car")
+    assert len(a) == 1
+    assert "car" not in a
+    assert "carpet" in a
+    assert len(a["ar"]) == 1
+
+def test_discard_method_patterntrie_element_prefix():
+    a = PatternCharTrie(initial=["car", "carpet"])
+    a.discard("carpet")
+    assert len(a) == 1
+    assert "car" in a
+    assert "carpet" not in a
+    assert len(a["ar"]) == 1
+
+def test_discard_method_patterntrie_element_infix():
+    a = PatternCharTrie(initial=["discar", "car", "carpet"])
+    a.discard("car")
+    assert len(a) == 2
+    assert "car" not in a
+    assert "carpet" in a
+    assert "discar" in a
+    assert len(a["ar"]) == 2
 
 
 def test_pattern_chartrie_simple_prefix_works():

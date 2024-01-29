@@ -1,3 +1,5 @@
+from threading import Lock
+
 from collections.abc import MutableSet
 
 # These two are officially stated by Unicode as "not characters".
@@ -18,6 +20,7 @@ class PrefixCharTrie(MutableSet):
     def __init__(self, initial=None, *, root=None, pattern=""):
         self.data = root if root is not None else {}
         self.pattern = pattern
+        self.lock = Lock()
         if not pattern in self.data:
             self.data[pattern] = set()
 
@@ -30,7 +33,7 @@ class PrefixCharTrie(MutableSet):
             if letter in self.data[pattern]:
                 pattern += letter
                 continue
-            raise KeyError()
+            return self.__class__()
         return self.__class__(root=self.data, pattern = pattern)
 
     @property
@@ -54,12 +57,13 @@ class PrefixCharTrie(MutableSet):
         if _ENTRY_END in key or _WORD_END in key:
             raise ValueError("Invalid character in key")
         key = key + _WORD_END
-        pattern = self.pattern
-        for letter in key:
-            branch  = self.data.setdefault(pattern, set())
-            pattern = pattern + letter
-            branch.add(letter)
-        self.data[pattern] = _WORD_END
+        with self.lock:
+            pattern = self.pattern
+            for letter in key:
+                branch  = self.data.setdefault(pattern, set())
+                pattern = pattern + letter
+                branch.add(letter)
+            self.data[pattern] = _WORD_END
 
     def copy(self):
         cls = type(self)
@@ -126,8 +130,9 @@ class PatternCharTrie(PrefixCharTrie):
             raise ValueError("PatternCharTrie cannot add new final values having a selected pattern")
 
         pattern = ""
-        for i in range(len(key)):
-            self._subpattern_add(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
+        with self.lock:
+            for i in range(len(key)):
+                self._subpattern_add(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
 
     def _demangle(self, word):
         if not _WORD_END in word:
@@ -148,7 +153,33 @@ class PatternCharTrie(PrefixCharTrie):
 
 
     def discard(self, key):
-        raise NotImplementedError()
+        if key not in self:
+            raise KeyError(f"No item corresponding to {key}")
+        with self.lock:
+            for i, letter in enumerate(key):
+                #root = self.data[""]
+                partial = letter
+                paths = {partial,}
+                for j, next_letter in enumerate(key[i + 1:] + (_WORD_END if i > 0 else "") + key[0:i]):
+                    partial += next_letter
+                    paths.add(partial)
+                self.data[partial].remove(_ENTRY_END)
+
+                # trying to remove the "fossils" that led to the
+                # removed entry is very hard, if these
+                # are used by more words.
+                # we just leave them there!
+
+                #if not self.data[partial]:
+                    #del self.data[partial]
+                    ## no other word leading here, means
+                    ## all partial paths are also part of the word being discarded
+                    #for path in paths:
+                        #prefix, target = path[:-1], path[-1]
+                        #self.data[prefix].remove(target)
+                        #if not self.data[prefix] and prefix != "":
+                            #del self.data[prefix]
+
 
     def __contains__(self, key):
         return _ENTRY_END in self.data.get(key, set())
