@@ -61,13 +61,10 @@ class PrefixCharTrie(MutableSet):
             if item == _WORD_END:  # It is not because it is used as a singleton around
                              # that one can use "is": once merged to a string and sliced
                              # from there you have new instances. (thanks unit tests!)
-                results.update(self._expand(pattern))
+                results.add(pattern)
                 continue
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
-
-    def _expand(self, pattern):
-        return {pattern}
 
     def add(self, key):
         if _ENTRY_END in key or _WORD_END in key:
@@ -166,7 +163,6 @@ class PatternCharTrie(PrefixCharTrie):
             results.update(subitem for subitem in self._contents(pattern + item))
         return results
 
-
     def discard(self, key):
         if key not in self:
             raise KeyError(f"No item corresponding to {key}")
@@ -214,6 +210,19 @@ class NormalizedTrie(PatternCharTrie):
         new = super().__copy__()
         new.normalized = copy(self.normalized)
         return new
+
+    def __getitem__(self, key):
+        if key in self.normalized.literal:
+            return {key}
+        return super().__getitem__(self.normalized.normalize(key))
+
+    def _contents(self, pattern):
+        pattern = self.normalized.normalize(pattern)
+        normalized_results = super()._contents(pattern)
+        results = set()
+        for norm_key in normalized_results:
+            results.update(self._expand(norm_key))
+        return results
 
     def _expand(self, pattern):
         return self.normalized.get_multi(pattern)
