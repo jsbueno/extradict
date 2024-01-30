@@ -11,7 +11,8 @@ from .extratuple import fastnamedtuple
 from .binary_tree_dict import TreeDict
 from .grouper import Grouper
 from .nested_data import NestedData
+from .trie import PrefixTrie, Trie, NormalizedTrie
 
 __author__ = "João S. O. Bueno"
-__version__ = "0.6.0+"
+__version__ = "0.6.1"
 

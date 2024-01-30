@@ -1,6 +1,6 @@
 import pytest
 
-from extradict.trie import PrefixCharTrie, PatternCharTrie
+from extradict.trie import PrefixCharTrie, PatternCharTrie, NormalizedTrie
 from extradict.trie import _WORD_END, _ENTRY_END
 
 
@@ -128,6 +128,7 @@ def test_pattern_chartrie_simple_prefix_works():
     a = PatternCharTrie(initial=["car", "carpet", "oscar"])
     assert a["car"].contents == {"car", "carpet", "oscar"}
 
+
 def test_pattern_chartrie_contains_works():
     a = PatternCharTrie(initial=["car", "carpet", "oscar"])
     assert "car" in a
@@ -136,3 +137,31 @@ def test_pattern_chartrie_contains_works():
     assert "ca" not in a
     assert "scar" not in a
     assert "arpe" not in a
+
+
+def test_normalized_trie_works():
+    a = NormalizedTrie(initial=["maçã", "maca"])
+    assert len(a) == 2
+    assert len(a["mac"]) == 2
+    assert len(a["maç"]) == 2
+    assert "maca" in a
+    assert "maçã" in a
+
+
+def test_normalized_trie_discard():
+    a = NormalizedTrie(initial=["maçã", "maca"])
+    a.discard("maçã")
+    assert "maca" in a
+    assert "maçã" not in a
+    assert len(a) == 1
+    a.discard("maca")
+    assert len(a) == 0
+
+    a = NormalizedTrie(initial=["maçã", "maca"])
+    a.discard("maca")
+    assert "maca" not in a
+    assert "maçã" in a
+    assert len(a) == 1
+    a.discard("maçã")
+    assert len(a) == 0
+

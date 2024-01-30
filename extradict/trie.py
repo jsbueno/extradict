@@ -1,6 +1,6 @@
 from collections.abc import MutableSet
 from copy import copy
-from threading import Lock
+from threading import RLock
 
 
 from .normalized_dict import FallbackNormalizedDict as NormalizedDict
@@ -23,7 +23,7 @@ class PrefixCharTrie(MutableSet):
     def __init__(self, initial=None, *, root=None, pattern=""):
         self.data = root if root is not None else {}
         self.pattern = pattern
-        self.lock = Lock()
+        self.lock = RLock()
         if not pattern in self.data:
             self.data[pattern] = set()
 
@@ -111,7 +111,6 @@ class PrefixCharTrie(MutableSet):
         return f"Trie {('prefixed with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
 
 
-CharTrie = PrefixCharTrie
 
 
 class PatternCharTrie(PrefixCharTrie):
@@ -160,11 +159,11 @@ class PatternCharTrie(PrefixCharTrie):
             if item == _ENTRY_END:
                 results.add(self._demangle(pattern))
                 continue
-            results.update(subitem for subitem in self._contents(pattern + item))
+            results.update(subitem for subitem in __class__._contents(self, pattern + item))
         return results
 
     def discard(self, key):
-        if key not in self:
+        if key not in self and not self._deleting_guard(key):
             raise KeyError(f"No item corresponding to {key}")
         with self.lock:
             for i, letter in enumerate(key):
@@ -183,6 +182,9 @@ class PatternCharTrie(PrefixCharTrie):
 
     def __contains__(self, key):
         return _ENTRY_END in self.data.get(key, set())
+
+    def _deleting_guard(self, key):
+        return False
 
     def __repr__(self):
         return f"PatternTrie {('patterned with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
@@ -228,9 +230,23 @@ class NormalizedTrie(PatternCharTrie):
         return self.normalized.get_multi(pattern)
 
     def discard(self, key):
-        raise NotImplementedError()
+        with self.lock:
+            del self.normalized[key]
+            norm_key = self.normalized.normalize(key)
+            if not self.normalized.get_multi(norm_key):
+                self._deleting_key = norm_key
+                super().discard(norm_key)
+                del self._deleting_key
+
+    def _deleting_guard(self, key):
+        return getattr(self, "_deleting_key", None) == key
 
     @property
     def contents(self):
         return {self.normalized[item] for item in super().contents}
 
+
+PrefixTrie = PrefixCharTrie
+Trie = PatternCharTrie
+
+__all__ = ["PrefixCharTrie", "Trie", "NormalizedTrie"]
