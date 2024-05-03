@@ -2,7 +2,7 @@ from collections.abc import MutableSet
 from copy import copy
 from threading import RLock
 
-
+from .blobdict import BlobTextDict
 from .normalized_dict import FallbackNormalizedDict as NormalizedDict
 
 # These two are officially stated by Unicode as "not characters".
@@ -20,11 +20,14 @@ class PrefixCharTrie(MutableSet):
 
     Use `CharTrie[prefix].copy()` to have an independent data structure.
     """
-    def __init__(self, initial=None, *, root=None, pattern=""):
-        self.data = root if root is not None else {}
+    def __init__(self, initial=None, *, root=None, pattern="", backend=None):
+        if backend is None:
+            backend = dict
+        self.backend = backend
+        self.data = root if root is not None else backend()
         self.pattern = pattern
         self.lock = RLock()
-        if not pattern in self.data:
+        if backend is not BlobTextDict and not pattern in self.data:
             self.data[pattern] = set()
 
         if initial:
@@ -36,7 +39,7 @@ class PrefixCharTrie(MutableSet):
             if letter in self.data[pattern]:
                 pattern += letter
                 continue
-            return self.__class__()
+            return self.__class__(backend=self.backend)
         with self.lock:
             sub_instance = self._clone()
         sub_instance.pattern = pattern
@@ -44,6 +47,7 @@ class PrefixCharTrie(MutableSet):
 
     def _clone(self):
         new = self.__class__.__new__(self.__class__)
+        new.backend = self.backend
         new.data = self.data
         new.lock = self.lock
         new.pattern = self.pattern
@@ -73,7 +77,10 @@ class PrefixCharTrie(MutableSet):
         with self.lock:
             pattern = self.pattern
             for letter in key:
-                branch  = self.data.setdefault(pattern, set())
+                if self.backend is not BlobTextDict:
+                    branch  = self.data.setdefault(pattern, set())
+                else:
+                    branch = self.data[pattern]
                 pattern = pattern + letter
                 branch.add(letter)
             self.data[pattern] = _WORD_END

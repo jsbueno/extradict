@@ -162,6 +162,5 @@ class BlobTextDict(UserDict):
 
         return self.blob.get(offset)
 
-
     def __repr__(self):
         return f"{self.__class__.__name__}({{{', '.join(key + ':' + repr(value) for key, value in self.items())}}})"
