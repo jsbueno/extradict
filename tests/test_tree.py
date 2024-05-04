@@ -443,3 +443,16 @@ def test_treedict_key_function_works():
         a[word] = word
 
     assert list(a) == rwords
+
+
+def test_treedict_clear_and_reinsert():
+    a = TreeDict()
+    a["a"] = "a"
+    a["b"] = "b"
+    a.clear()
+    a["c"] = "c"
+    a["d"] = "d"
+
+    assert len(a) == 2
+    assert "c" in a
+    assert "a" not in a

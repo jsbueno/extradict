@@ -323,8 +323,9 @@ class AVLNode(PlainNode):
         self.balance()
 
     def delete(self, key):
-        super().delete(key)
+        result = super().delete(key)
         self.balance()
+        return result
 
     def balance(self):
         if self.balanced:
@@ -377,7 +378,7 @@ class TreeDict(MutableMapping):
 
     def __init__(self, *args, key=None):
         self.key = key
-        self.root = None
+        self.root = EmptyNode
         if len(args) == 1 and isinstance(args[0], Mapping):
             args = args[0].items()
         for key, value in args:
@@ -391,7 +392,7 @@ class TreeDict(MutableMapping):
         return self.root.get(key).value
 
     def __setitem__(self, key, value):
-        if self.root is None:
+        if self.root in (None, EmptyNode):
             self.root = self.node_cls(key=key, value=value, key_func=self.key)
         else:
             self.root.insert(key=key, value=value)
@@ -400,7 +401,7 @@ class TreeDict(MutableMapping):
         if not self.root:
             raise KeyError(key)
         if len(self.root) == 1:
-            self.root = None
+            self.root = EmptyNode
         else:
             self.root.delete(key)
 
