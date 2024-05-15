@@ -18,6 +18,7 @@ def test_ordered_set_initializes_2_items():
     assert 2 in a
     assert len(a) == 2
 
+
 def test_ordered_set_keeps_order():
     SIZE = 200
     MAX = 10_000
@@ -36,3 +37,16 @@ def test_ordered_set_keeps_order():
             values.append(value)
             seen.add(value)
     assert list(a) == values
+
+
+def test_ordered_set_keeps_order_custom_key():
+    SIZE = 200
+    MAX = 10_000
+    a = OrderedSet(key=lambda k: k)
+    r = random.Random()
+    d = deque(maxlen=0)
+    consume = d.extend
+    r.seed(42)
+    consume(a.add(r.randint(0, MAX)) for _ in range(SIZE))
+    values = sorted(a)
+    assert values == list(a)

@@ -1,5 +1,7 @@
 from collections.abc import MutableSet
 
+from threading import RLock
+
 
 class OrderedSet(MutableSet):
     """Order Keeping Set -
@@ -12,7 +14,9 @@ class OrderedSet(MutableSet):
         if key is None:
                 data = dict()
         else:
-            raise NotImplementedError()
+            data = set()
+            self.lock = RLock()
+            # raise NotImplementedError()
         self.key = key
         self.data = data
         for item in initial:
@@ -30,10 +34,14 @@ class OrderedSet(MutableSet):
     def add(self, value):
         if self.key is None:
             self.data[value] = value
+        else:
+            self.data.add(value)
 
     def discard(self, value):
         if self.key is None:
             del self.data[value]
+        else:
+            self.data.discard(value)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({set(self.data)!s})"
