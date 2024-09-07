@@ -1,24 +1,54 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools>=74", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["extradict"]
+
+[tool.setuptools.dynamic]
+version = {attr = "extradict.__version__"}
 
 [project]
 name = "extradict"
-authors = [
-    {name = "João S. O. Bueno", email = "gwidion@gmail.com"},
-]
-description = "Extra mapping utilities for Python"
-readme = "README.rst"
-requires-python = ">=3.8"
-keywords = []
-license = {text = "LGPLv3.0"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
-dependencies = []
 dynamic = ["version"]
+description = "Miscelaneous data containers and utilities: A versioned dictionary, a bidirectional dictionary, a binary tree backed dictionary, a Grouper iterator mapper similar to itertools.tee, and an easy extractor from dictionary key/values to variables"
+keywords = ["versioned", "bijective", "assigner", "getter", "unpack", "transactional", "container", "collection", "dict", "dictionary", "normalized", "binarytree", "trie"]
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.8"
+authors = [{ name = "Joao S. O. Bueno" }]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+repository = "https://github.com/jsbueno/extradict"
 
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "pyflakes",
+    "pytest-coverage",
+]
 
-# ... other project metadata fields as listed in:
-#     https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+[tool.pytest.ini_options]
+testpaths = "tests"
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --doctest-modules"
+
+[tool.mypy]
+implicit_reexport = true

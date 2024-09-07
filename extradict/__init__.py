@@ -15,5 +15,5 @@ from .trie import PrefixTrie, Trie, NormalizedTrie
 from .blobdict import BlobTextDict
 
 __author__ = "João S. O. Bueno"
-__version__ = "0.6.1"
+__version__ = "0.6.2beta1"
 
