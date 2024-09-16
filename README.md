@@ -406,3 +406,60 @@ True
 >>> a.merge({"city": None}, "persons.*.address")  # creates a new "city" key in all addresses
 ```
 
+## PrefixTrie
+A Trie data structure with a `set`-like interface. It should contain
+strings - and after picking a prefix by using the square bracket notation
+for mappings, it returns a view of the data which only contains the matching
+elements. (data is not dduplicated unferlying).
+
+Unlike, for example, running a regexp against a list
+with several thousand words, which will have to walk through
+all entries, these Tries really only descend into the entries
+which match the given pattern, never touching any unmacthed
+entry.
+
+Can be used IRL for auto-completing text:
+
+```python
+>>> from extradict import PrefixTrie
+>>> a = PrefixTrie(["abc", "abcd", "def", "defg"])
+>>> len(a)
+4
+>>> list(a["ab"])
+['abcd', 'abc']
+>>> list(a["def"])
+['defg', 'def']
+```
+## Trie
+An evolution of PrefixTrie, which will match any pattern
+in the middle of the member strings, not only as a prefix:
+
+```python
+>>> from extradict import Trie
+>>> a = Trie(["abc", "zabc", "def", "bcdef"])
+>>> list(a["bc"])
+['zabc', 'abc', 'bcdef']
+```
+
+## NormalizedTrie
+A Trie that will match patterns in the middle,
+but internally keeps a helper `NormalizedDict`
+structure which will make it ignore differences
+due to punctiation, space and accented characters -
+making it ideal for real world text-completion finding.
+
+
+```python
+>>> from extradict import NormalizedTrie
+>>>
+>>> a = NormalizedTrie(("a-b-c", "abc", "maca", "maçã"))
+>>> list(a["bc"])
+['abc', 'a-b-c']
+>>> list(a["mac"])
+['maca', 'maçã']
+>>> list(a["macã"])
+['maca', 'maçã']
+```
+
+```
+
