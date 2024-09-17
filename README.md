@@ -64,7 +64,7 @@ For extra examples, check the "tests" directory
 ## OrderedVersionDict
 
 Inherits from VersionDict, but preserves and retrieves key
-insertion order. Unlike a plain "collections.OrderedDict",
+insertion order. Unlike a plain dictionary or `collections.OrderedDict`,
 however, whenever a key's value is updated, it is moved
 last on the dictionary order.
 
@@ -114,7 +114,7 @@ Or:
 2, 3
 ```
 
-It works with Python 3.4+ "enum"s - which is great as it allow one
+It works with Python "Enum"s - which is great as it allow one
 to use the enums by their own name, without having to prepend the Enum class
 every time:
 ```python
@@ -212,10 +212,8 @@ It is faster for instantiating as compared with stdlib's namedtuple
 
 ## defaultnamedtuple
 Implementation of named-tuple using default parameters -
-Either pass a sequence of 2-tuples (or an OrderedDict) as the second parameter, or
+Either pass a sequence of 2-tuples or any ordered Mapping (like a `dict`) as the second parameter, or
 send in kwargs with the default parameters, after the first.
-(This takes advantage of python3.6 + guaranteed ordering of **kwargs for a function
-see https://docs.python.org/3.6/whatsnew/3.6.html)
 
 The resulting object can accept positional or named parameters to be instantiated, as a
 normal namedtuple, however, any omitted parameters are used from the original

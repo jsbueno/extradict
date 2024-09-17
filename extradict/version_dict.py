@@ -9,7 +9,7 @@ that allows one to know wether a dictionary had  changed.
 """
 
 import threading
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 from copy import copy
 
 try:
@@ -151,7 +151,7 @@ class VersionDict(MutableMapping):
 
 
 class OrderedVersionDict(VersionDict):
-    _dictclass = OrderedDict
+    _dictclass = dict
 
     def freeze(self, version=None):
         new = self._dictclass()

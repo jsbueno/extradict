@@ -1,9 +1,7 @@
 import sys
-from collections import OrderedDict
 
 from collections.abc import Mapping
 
-_py36 = sys.version_info.major == 3 and sys.version_info.minor >= 6 or sys.version_info.major > 3
 
 def namedtuple(name, attrs):
     """
@@ -55,7 +53,7 @@ def namedtuple(name, attrs):
             return "{}({})".format(self.__class__.__name__, ", ".join("{}={}".format(name, value) for name, value in zip(self._fields, self)))
 
         def _asdict(self):
-            return OrderedDict((key, value) for key, value in zip(self._fields, self))
+            return {key: value for key, value in zip(self._fields, self)}
 
         _fields = __definition_order__ = attrs
 
@@ -82,9 +80,9 @@ def fastnamedtuple(name, attrs):
 def defaultnamedtuple(_name, _attrs=None, **kw):
     """
     Implementation of named-tuple using default parameters -
-    Either pass a sequence of 2-tupes (or an OrderedDict) as the second parameter, or
+    Either pass a sequence of 2-tupes or an ordered Mapping (like a dict) as the second parameter, or
     send in kwargs with the default parameters, after the first.
-    (This takes advantadge of python3.6 + guaranteed ordering of **kwargs for a function
+    (This takes advantadge of python  guaranteed ordering of **kwargs for a function
     see https://docs.python.org/3.6/whatsnew/3.6.html)
 
     """
@@ -92,18 +90,10 @@ def defaultnamedtuple(_name, _attrs=None, **kw):
 
     if _attrs:
         if not isinstance(_attrs , Mapping):
-            if not _py36 and type(_attrs) is dict:
-                raise TypeError("'defaultnamedtuple' can't work with unordered dicts prior to Python 3.6")
-            elif not _py36:
-                _attrs = OrderedDict(_attrs)
-            else:
-                _attrs = dict(_attrs)
+            _attrs = dict(_attrs)
         if kw:
             raise TypeError("'defaultnamedtuple' should be passed either a dict or named parameters - not both")
         kw = _attrs
-
-    elif not _py36:
-        raise TypeError("'defaultnamedtuple' with kwargs requires at least Python 3.6 - pass an OrderedDict with defaults instead")
 
     NamedTuple = namedtuple(name, kw.keys())
 
