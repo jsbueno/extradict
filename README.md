@@ -7,10 +7,7 @@ enough tested for production-usage.
 
  ## What is new in v. 0.7
 
-  - NestedData now can retrieve all records from  a list subpath if
- "*" is given as the list index. eg, "company.clients.*.address.city" will
- retrive a NestedData sequence containing all cities in the original
- structure.
+  - The Trie, PrefixTrie and NormalizedTrie classes! See bottom of file!
 
 
 ## ExtraDict data structures:

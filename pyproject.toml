@@ -52,3 +52,9 @@ addopts = "-v --doctest-modules"
 
 [tool.mypy]
 implicit_reexport = true
+
+[tool.pytest]
+testpaths = "tests/"
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --doctest-modules"
