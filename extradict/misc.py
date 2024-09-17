@@ -10,7 +10,7 @@ class TransformKeyDict(Mapping):
 
     """
 
-    transform = lambda s, key: key
+    transform = lambda s, key: key  # noqa
 
     def __getitem__(self, key):
         return self.transform(key)

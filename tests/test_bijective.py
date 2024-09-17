@@ -13,7 +13,7 @@ def test_bijective_works():
 
 def test_bijective_dict_raises_on_unhashable_value():
     with pytest.raises(TypeError):
-        a = BijectiveDict["a"] = []
+        BijectiveDict["a"] = []
 
 
 def test_bijective_changes_reciprocal_value_on_assignement():

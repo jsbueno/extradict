@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import enum
 import threading
 
@@ -20,21 +22,21 @@ def test_mapgetter_can_be_used_with_key_renaming():
 
 def test_mapgetter_can_use_any_name():
     a = dict(b=1, c=2)
-    with MapGetter(a) as anyname:
+    with MapGetter(a) as anyname:  # flake8: noqa
         from anyname import b, c
     assert b == 1 and c == 2
 
 
 def test_mapgetter_can_use_existing_module_name():
     a = dict(b=1, c=2)
-    with MapGetter(a) as math:
+    with MapGetter(a) as math:  # NOQA
         from math import b, c
     assert b == 1 and c == 2
 
 
 def test_regular_import_works_from_within_():
     a = dict(b=1, c=2)
-    with MapGetter(a) as a:
+    with MapGetter(a) as a:  # NOQA
         from math import cos
     assert cos
 
@@ -47,7 +49,7 @@ def test_mapgetter_is_thread_safe():
     nonlocal_check = [False, None, None, None]
 
     def thread_1():
-        with MapGetter(a) as math:
+        with MapGetter(a) as math:  # NOQA
             from math import b, c
 
             nonlocal_check[0] = True
@@ -76,7 +78,7 @@ def test_mapgetter_is_thread_safe():
 
 
 def test_mapgetter_works_with_default_value():
-    with MapGetter(default=None) as m:
+    with MapGetter(default=None) as m:  # NOQA
         from m import n, o, p
     assert n is None
     assert o is None
@@ -84,14 +86,14 @@ def test_mapgetter_works_with_default_value():
 
 
 def test_mapgetter_works_with_default_function_with_parameters():
-    with MapGetter(default=lambda name: name) as m:
+    with MapGetter(default=lambda name: name) as m:  # NOQA
         from m import foo, bar
     assert foo == "foo"
     assert bar == "bar"
 
 
 def test_mapgetter_works_with_default_function_without_parameters():
-    with MapGetter(default=lambda: "baz") as m:
+    with MapGetter(default=lambda: "baz") as m:  # NOQA
         from m import foo, bar
     assert foo == "baz"
     assert bar == "baz"
@@ -102,7 +104,7 @@ def test_mapgetter_works_with_default_non_function_callable():
         def __call__(self, name):
             return name
 
-    with MapGetter(default=Defaulter()) as m:
+    with MapGetter(default=Defaulter()) as m:  # NOQA
         from m import foo, bar
     assert foo == "foo"
     assert bar == "bar"
@@ -121,7 +123,7 @@ def test_mapgetter_works_with_default_non_function_callable():
 def test_mapgetter_works_with_defaultdict():
     from collections import defaultdict
 
-    with MapGetter(defaultdict(lambda: "baz")) as m:
+    with MapGetter(defaultdict(lambda: "baz")) as m:  # NOQA
         from m import foo, bar
 
     assert foo == "baz"
@@ -130,7 +132,7 @@ def test_mapgetter_works_with_defaultdict():
 
 def test_mapgetter_works_with_mapping_and_default_parameter():
     a = dict(b=1, c=2)
-    with MapGetter(a, default=lambda name: name) as a:
+    with MapGetter(a, default=lambda name: name) as a: # NOQA
         from a import b, c, d
     assert b == 1 and c == 2 and d == "d"
 
