@@ -40,7 +40,6 @@ repository = "https://github.com/jsbueno/extradict"
 dev = [
     "pytest",
     "black",
-    "flake8",
     "pytest-coverage",
 ]
 
