@@ -57,14 +57,16 @@ def test_node_insert_both_sides():
 
 
 @pytest.mark.parametrize(
-    ("values", "expected"), [
-            ((0,), 1),
-            ((0,5), 2),
-            ((0, 5, -5), 2),
-            ((0, 5, -5, 7), 3),
-            ((0, 5, -5, 7, 10), 4), # not auto balancing
-            ((0, 5, -5, 7, 10, -7), 4),
-])
+    ("values", "expected"),
+    [
+        ((0,), 1),
+        ((0, 5), 2),
+        ((0, 5, -5), 2),
+        ((0, 5, -5, 7), 3),
+        ((0, 5, -5, 7, 10), 4),  # not auto balancing
+        ((0, 5, -5, 7, 10, -7), 4),
+    ],
+)
 def test_depth(values, expected):
     root = PlainNode(values[0])
     for v in values[1:]:
@@ -93,7 +95,7 @@ def test_node_delete_leaf():
 
 def test_node_delete_root_single_node():
     n = PlainNode(0)
-    assert not(n.delete(0))
+    assert not (n.delete(0))
 
 
 def test_node_delete_root_one_branch():
@@ -149,12 +151,17 @@ def test_node_delete_branch_2_leaves():
     n = PlainNode(0)
     n.insert(5)
     n.insert(10)
-    n.insert (3)
+    n.insert(3)
     n.delete(5)
     assert n.value is 0
     assert n.right.value in (10, 3)
     assert n.right.depth == 2
-    assert n.right.left and n.right.left.value == 3 or n.right.right and n.right.right.value == 10
+    assert (
+        n.right.left
+        and n.right.left.value == 3
+        or n.right.right
+        and n.right.right.value == 10
+    )
     assert bool(n.right.left) ^ bool(n.right.right)
 
 
@@ -162,7 +169,7 @@ def test_node_delete_non_existing_value():
     n = PlainNode(0)
     n.insert(5)
     n.insert(10)
-    n.insert (3)
+    n.insert(3)
     n.insert(-5)
     with pytest.raises(KeyError):
         n.delete(7)
@@ -213,12 +220,14 @@ def test_node_get_non_existing_element_raises_keyerror():
         n.get(8)
     assert True
 
+
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "search_value", "expected_return_values"], [
+    ["nodes_to_insert", "search_value", "expected_return_values"],
+    [
         ((0,), 0, (0, 0)),
         ((0,), 1, (0, None)),
         ((0,), -2, (None, 0)),
-        ((0,5), 2, (0, 5)),
+        ((0, 5), 2, (0, 5)),
         ((0, 5, 3), 2, (0, 3)),
         ((0, 5, 3), 3, (3, 3)),
         ((0, 5, 3), 3.5, (3, 5)),
@@ -228,11 +237,10 @@ def test_node_get_non_existing_element_raises_keyerror():
         ((0, 5, 15, 20, 10, 12, 13), 14, (13, 15)),
         ((0, -5, -3), 2, (0, None)),
         ((0, -5, -3, -4, -4.5), -4.2, (-4.5, -4)),
-])
+    ],
+)
 def test_node_get_non_existing_element_returns_path_to_closest(
-    nodes_to_insert,
-    search_value,
-    expected_return_values
+    nodes_to_insert, search_value, expected_return_values
 ):
     values = iter(nodes_to_insert)
     n = PlainNode(next(values))
@@ -286,10 +294,11 @@ def test_node_iter():
 
 
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "expected"],[
+    ["nodes_to_insert", "expected"],
+    [
         [(0,), True],
-        [(0, 1,), True],
-        [(0, 1, 2,), False],
+        [(0, 1), True],
+        [(0, 1, 2), False],
         [(0, 1, 2, 3), False],
         [(0, 10, 20, 25), False],
         [(0, 10, 20, 25, -10), False],
@@ -297,7 +306,8 @@ def test_node_iter():
         [(0, 10, 20, 25, -10, -20, -30), True],
         [(0, 10, 20, 25, -10, -20, -30, -40), True],
         [(0, 10, 20, 25, -10, -20, -30, -40, -50, -60), False],
-])
+    ],
+)
 def test_node_reports_balanced(nodes_to_insert, expected):
     values = iter(nodes_to_insert)
     n = PlainNode(next(values))
@@ -308,9 +318,17 @@ def test_node_reports_balanced(nodes_to_insert, expected):
 
 
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "expected_root"],[
+    ["nodes_to_insert", "expected_root"],
+    [
         [(0,), 0],
-        [(0, 1, 2,), 1],
+        [
+            (
+                0,
+                1,
+                2,
+            ),
+            1,
+        ],
         [(0, 1, 2, 3), 1],
         [(0, 10, 20, 25), 10],
         [(0, -10, -20, -30), -10],
@@ -318,7 +336,8 @@ def test_node_reports_balanced(nodes_to_insert, expected):
         [(0, 10, 20, -10, 25), 10],
         [(0, 10, 20, -10, -20, -30, -40, 25), -10],
         [(0, 10, 20, -10, -20, -30, -40, -50, -60, -70, -80, -90, 25), -50],
-])
+    ],
+)
 def test_avlnode_always_balanced(nodes_to_insert, expected_root):
     values = iter(nodes_to_insert)
     n = AVLNode(next(values))
@@ -331,7 +350,8 @@ def test_avlnode_always_balanced(nodes_to_insert, expected_root):
 
 
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "key", "expected"],[
+    ["nodes_to_insert", "key", "expected"],
+    [
         [(0, 4, 2, 1, 3), 3, (0, 4, 2, 3)],
         [(0, 4, 2, 1, 3), 0, (0,)],
         [(0, 4, 2, 1, 3), 4, (0, 4)],
@@ -339,7 +359,8 @@ def test_avlnode_always_balanced(nodes_to_insert, expected_root):
         [(0, 4, 2, 1, 3), 0.5, (0, 4, 2, 1, None)],
         [(0, -4, -2), -2, (0, -4, -2)],
         [(0, -4, -2), -2.5, (0, -4, -2, None)],
-])
+    ],
+)
 def test_get_node_path_works(nodes_to_insert, key, expected):
     values = iter(nodes_to_insert)
     n = PlainNode(next(values))
@@ -351,7 +372,8 @@ def test_get_node_path_works(nodes_to_insert, key, expected):
 
 
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "node_to_start", "side", "expected_last_node"],[
+    ["nodes_to_insert", "node_to_start", "side", "expected_last_node"],
+    [
         [(0, 5, 1, 2), 0, "right", 1],
         [(0, 5, 1, 2), 1, "right", 2],
         [(0, 5, 1, 2), 2, "right", 5],
@@ -363,7 +385,8 @@ def test_get_node_path_works(nodes_to_insert, key, expected):
         [(0, -5, -1, -2, 5, 1, 2), 1, "left", 0],
         [(0, -5, -1, -2, 5, 1, 2), 0, "left", -1],
         [(0, -5, -1, -2, 5, 1, 2), -1, "left", -2],
-])
+    ],
+)
 def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_node):
     values = iter(nodes_to_insert)
     n = PlainNode(next(values))
@@ -376,8 +399,10 @@ def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_no
         return
     assert path[-1].value == expected_last_node
 
+
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "slice_", "expected"],[
+    ["nodes_to_insert", "slice_", "expected"],
+    [
         [(0, 1, 2, 3, 4, 5), (0, 2, None), (0, 1)],
         [(0, 1, 2, 3, 4, 5), (0, 1, None), (0,)],
         [(0, 1, 2, 3, 4, 5), (0, 3, None), (0, 1, 2)],
@@ -393,7 +418,8 @@ def test_traverse_to_side(nodes_to_insert, node_to_start, side, expected_last_no
         [(0, 1, -1), (None, None, -1), (1, 0, -1)],
         [(0, 1, 2, 3, 4, 5), (0, 2, -1), ()],
         [(0, 1, 2, 3, 4, 5), (2, 0, 1), ()],
-])
+    ],
+)
 def test_node_slice_works(nodes_to_insert, slice_, expected):
     values = iter(nodes_to_insert)
     n = AVLNode(next(values))
@@ -405,7 +431,8 @@ def test_node_slice_works(nodes_to_insert, slice_, expected):
 
 
 @pytest.mark.parametrize(
-    ["nodes_to_insert", "slice_", "expected"],[
+    ["nodes_to_insert", "slice_", "expected"],
+    [
         [(0, 1, 2, 3, 4, 5), (0, 4, 2), (0, 2)],
         [(0, 1, 2, 3, 4, 5, 6, 7, 8), (0, None, 3), (0, 3, 6)],
         [(0, 1, 2, 3, 4, 5, 6, 7, 8), (None, 1, -2), (8, 6, 4, 2)],
@@ -413,8 +440,11 @@ def test_node_slice_works(nodes_to_insert, slice_, expected):
         [(0, 1, 2, 3, 4, 5), (0.5, 5, 2), (1, 3)],
         [(0, 1, 2, 3, 4, 5), (0.5, 5.5, 2), (1, 3, 5)],
         [(0, 1, 2, 3, 4, 5, 6, 7, 8), (6.5, None, -2), (6, 4, 2, 0)],
-])
-def test_node_slice_works_with_larger_than_unity_step(nodes_to_insert, slice_, expected):
+    ],
+)
+def test_node_slice_works_with_larger_than_unity_step(
+    nodes_to_insert, slice_, expected
+):
     values = iter(nodes_to_insert)
     n = AVLNode(next(values))
     for value in values:
@@ -428,7 +458,9 @@ def delay_wrapper_decorator(func, delay=0.025):
     def wrapper(*args, **kw):
         sleep(delay)
         return func(*args, **kw)
+
     return wrapper
+
 
 @pytest.mark.skip("test code incomplete")
 def test_plainnode_avoids_thread_race_condition():

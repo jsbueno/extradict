@@ -74,7 +74,7 @@ class VersionDict(MutableMapping):
 
     def update(self, other):
         """The update operation uses a single version number for
-            all affected keys
+        all affected keys
         """
         with self.lock:
             self._version += 1
@@ -86,11 +86,11 @@ class VersionDict(MutableMapping):
 
     def get(self, item, default=_Deleted, version=None):
         """
-            VersionedDict.get(item, default=None) -> same as dict.get
-            VersionedDict.get(item, [default=Sentinel], version) ->
-                returns existing value at the given dictionary version. If
-                value was not set, and no default is given,
-                raises KeyError (unlike regular dict)
+        VersionedDict.get(item, default=None) -> same as dict.get
+        VersionedDict.get(item, [default=Sentinel], version) ->
+            returns existing value at the given dictionary version. If
+            value was not set, and no default is given,
+            raises KeyError (unlike regular dict)
         """
         if version is None:
             return super(VersionDict, self).get(

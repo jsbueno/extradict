@@ -16,11 +16,11 @@ def namedtuple(name, attrs):
     performs no lenght checking.
 
     """
-    if isinstance(attrs , str):
+    if isinstance(attrs, str):
         attrs = attrs.split()
     attrs = tuple(attrs)
 
-    _field_order  = {field: i for i, field in enumerate(attrs)}
+    _field_order = {field: i for i, field in enumerate(attrs)}
 
     class NamedTuple(tuple):
         __slots__ = ()
@@ -36,21 +36,39 @@ def namedtuple(name, attrs):
                 # to replicate the exact collections.namedtuple error messages here  mean to duplicate
                 # Python's argument parsing logic itself. A meaningful TypeError should suffice
                 # raise TypeError("__new__() missing {} required positional argument{}: {}")
-                raise TypeError("__new__() got an incorrect number of parameters for '{}'".format(name))
+                raise TypeError(
+                    "__new__() got an incorrect number of parameters for '{}'".format(
+                        name
+                    )
+                )
             if kw:
                 original = args
                 args = list(args) + [None] * len(kw)
                 for key, value in kw.items():
                     pos = _field_order.get(key, None)
                     if pos is None:
-                        raise TypeError("__new__() got an unexpected keyword argument '{}'".format(key))
+                        raise TypeError(
+                            "__new__() got an unexpected keyword argument '{}'".format(
+                                key
+                            )
+                        )
                     if pos < len(original):
-                        raise TypeError("__new__() got multiple values for argument '{}'".format(key))
+                        raise TypeError(
+                            "__new__() got multiple values for argument '{}'".format(
+                                key
+                            )
+                        )
                     args[pos] = value
             return tuple.__new__(cls, args)
 
         def __repr__(self):
-            return "{}({})".format(self.__class__.__name__, ", ".join("{}={}".format(name, value) for name, value in zip(self._fields, self)))
+            return "{}({})".format(
+                self.__class__.__name__,
+                ", ".join(
+                    "{}={}".format(name, value)
+                    for name, value in zip(self._fields, self)
+                ),
+            )
 
         def _asdict(self):
             return {key: value for key, value in zip(self._fields, self)}
@@ -58,7 +76,9 @@ def namedtuple(name, attrs):
         _fields = __definition_order__ = attrs
 
     NamedTuple.__name__ = name
-    NamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
+    NamedTuple.__qualname__ = ".".join(
+        (sys._getframe().f_back.f_globals.get("__name__", "__main__"), name)
+    )
 
     return NamedTuple
 
@@ -71,10 +91,11 @@ def fastnamedtuple(name, attrs):
     It is faster for instantiating as compared with stdlib's namedtuple
     """
     cls = namedtuple(name, attrs)
-    delattr (cls, "__new__")
-    cls.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
+    delattr(cls, "__new__")
+    cls.__qualname__ = ".".join(
+        (sys._getframe().f_back.f_globals.get("__name__", "__main__"), name)
+    )
     return cls
-
 
 
 def defaultnamedtuple(_name, _attrs=None, **kw):
@@ -89,29 +110,41 @@ def defaultnamedtuple(_name, _attrs=None, **kw):
     name = _name
 
     if _attrs:
-        if not isinstance(_attrs , Mapping):
+        if not isinstance(_attrs, Mapping):
             _attrs = dict(_attrs)
         if kw:
-            raise TypeError("'defaultnamedtuple' should be passed either a dict or named parameters - not both")
+            raise TypeError(
+                "'defaultnamedtuple' should be passed either a dict or named parameters - not both"
+            )
         kw = _attrs
 
     NamedTuple = namedtuple(name, kw.keys())
 
     class DefaultNamedTuple(NamedTuple):
-        __slots__=()
+        __slots__ = ()
         _defaults = kw
+
         def __new__(cls, *args, **kw):
-            used = set(cls._fields[:len(args)])
+            used = set(cls._fields[: len(args)])
             if kw:
                 parameters = kw.keys()
                 if used.intersection(parameters):
-                    raise TypeError("__new__() got multiple values for arguments '{}'".format(used.intersection(parameters)))
+                    raise TypeError(
+                        "__new__() got multiple values for arguments '{}'".format(
+                            used.intersection(parameters)
+                        )
+                    )
                 used.update(parameters)
-            args += tuple(kw.get(attrname, cls._defaults[attrname]) for attrname in cls._fields[len(args):])
+            args += tuple(
+                kw.get(attrname, cls._defaults[attrname])
+                for attrname in cls._fields[len(args) :]
+            )
 
             return tuple.__new__(cls, args)
 
     DefaultNamedTuple.__name__ = name
-    DefaultNamedTuple.__qualname__ = ".".join((sys._getframe().f_back.f_globals.get("__name__", "__main__"), name))
+    DefaultNamedTuple.__qualname__ = ".".join(
+        (sys._getframe().f_back.f_globals.get("__name__", "__main__"), name)
+    )
 
     return DefaultNamedTuple

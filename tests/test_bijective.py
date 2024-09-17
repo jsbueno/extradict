@@ -42,9 +42,14 @@ def test_bijective_tracks_assigned_keys():
     assert set(a.generated_keys) == {"b"}
     assert "a" not in a.assigned_keys
 
+
 def test_bijective_repr():
     a = BijectiveDict(a=1)
-    assert repr(a) == "BijectiveDict({'a': 1, 1: 'a'})" or "BijectiveDict({1: 'a', 'a': 1})"
+    assert (
+        repr(a) == "BijectiveDict({'a': 1, 1: 'a'})"
+        or "BijectiveDict({1: 'a', 'a': 1})"
+    )
+
 
 def test_bijective_copy():
     a = BijectiveDict(a=1)

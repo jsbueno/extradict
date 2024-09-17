@@ -42,7 +42,10 @@ EmptyNode = EmptyNode()  # The KISS Singleton
 
 class PlainNode:
     __slots__ = "key value _left _right key_func _len _depth".split()
-    def __init__(self, key, value=_empty, left=EmptyNode, right=EmptyNode, key_func=None):
+
+    def __init__(
+        self, key, value=_empty, left=EmptyNode, right=EmptyNode, key_func=None
+    ):
         self.key = key
         self.value = value if value != _empty else key
         self.left = left
@@ -94,12 +97,18 @@ class PlainNode:
         try:
             target_str = "left" if new_key < self_key else "right"
         except TypeError as error:
-            raise KeyError(f"{key!r} {'was converted to ' if type(key) != type(new_key) else 'has'}type {type(new_key)} and cant't be compared with {type(self_key)} ")
+            raise KeyError(
+                f"{key!r} {'was converted to ' if type(key) != type(new_key) else 'has'}type {type(new_key)} and cant't be compared with {type(self_key)} "
+            )
         target = getattr(self, target_str)
         if target:
             target.insert(key, value, replace)
         else:
-            setattr(self, target_str, type(self)(key=key, value=value, key_func=self.key_func))
+            setattr(
+                self,
+                target_str,
+                type(self)(key=key, value=value, key_func=self.key_func),
+            )
         self._update_depth()
         self._update_len()
 
@@ -155,7 +164,6 @@ class PlainNode:
 
         return self._len
 
-
     def iter_slice(self, slice_):
         step = slice_.step if slice_.step is not None else 1
 
@@ -163,7 +171,11 @@ class PlainNode:
         start_side = "left" if step > 0 else "right"
         operator = ge_op if seek_direction == "right" else le_op
 
-        start, start_fallback = self.get_closest(slice_.start) if slice_.start is not None else (None, self._get_extreme_node(start_side))
+        start, start_fallback = (
+            self.get_closest(slice_.start)
+            if slice_.start is not None
+            else (None, self._get_extreme_node(start_side))
+        )
         start = start or start_fallback
         start_key = start._cmp_key(start.key)
         slice_start_key = start._cmp_key(slice_.start)
@@ -181,12 +193,14 @@ class PlainNode:
         while True:
             path = self._traverse_to_side(path, side=seek_direction)
             node = path[-1] if path else EmptyNode
-            if not node or (slice_.stop is not None and operator(node._cmp_key(node.key), node._cmp_key(slice_.stop))):
+            if not node or (
+                slice_.stop is not None
+                and operator(node._cmp_key(node.key), node._cmp_key(slice_.stop))
+            ):
                 break
             counter += 1
             if not counter % abs(step):
                 yield node
-
 
     def get_node_path(self, key, path=None):
         """Retrieve a list of nodes down to the node with the given Key.
@@ -229,8 +243,14 @@ class PlainNode:
         new_key = self._cmp_key(key)
 
         if new_key > closest_key:
-            return closest, closest._get_closest_ancestor_on_other_side(path, side="right")[1]
-        return closest._get_closest_ancestor_on_other_side(path, side="left")[1], closest
+            return (
+                closest,
+                closest._get_closest_ancestor_on_other_side(path, side="right")[1],
+            )
+        return (
+            closest._get_closest_ancestor_on_other_side(path, side="left")[1],
+            closest,
+        )
 
     def _cmp_key(self, key):
         return self.key_func(key) if self.key_func else key
@@ -249,7 +269,9 @@ class PlainNode:
             index -= 1
             if index < 0:
                 return None, EmptyNode
-            side_of_child = "same" if getattr(path[index], side) is path[index + 1] else "other"
+            side_of_child = (
+                "same" if getattr(path[index], side) is path[index + 1] else "other"
+            )
             if side_of_child == "other":
                 return index, path[index]
 
@@ -299,14 +321,16 @@ class PlainNode:
         return path
 
     def graph_repr(self, identifier="key"):
-        str_repr = str(self.key) if identifier=="key" else f"{self.key}: {self.value}"
+        str_repr = str(self.key) if identifier == "key" else f"{self.key}: {self.value}"
         repr_left = (self.left.graph_repr(identifier) if self.left else "").split("\n")
-        repr_right = (self.right.graph_repr(identifier) if self.right else "").split("\n")
+        repr_right = (self.right.graph_repr(identifier) if self.right else "").split(
+            "\n"
+        )
         len_l = len(repr_left[0])
         len_r = len(repr_right[0])
         width = len_l + len_r + 3
         result = [str_repr.center(width)]
-        #result.append("/     \\".center(width))
+        # result.append("/     \\".center(width))
         for line_left, line_right in zip_longest(repr_left, repr_right, fillvalue=""):
             result.append((line_left + "   " + line_right).center(width))
         return "\n".join(result)
@@ -351,7 +375,6 @@ class AVLNode(PlainNode):
         self._mute_into(new_parent, full=True)
 
 
-
 class TreeDict(MutableMapping):
     """Implements an AVLTree autobalancing tree with a Python Mapping interface.
 
@@ -374,6 +397,7 @@ class TreeDict(MutableMapping):
     and `get_closest_keys` will return a tuple of surrounding keys that exist.
 
     """
+
     node_cls = AVLNode
 
     def __init__(self, *args, key=None):

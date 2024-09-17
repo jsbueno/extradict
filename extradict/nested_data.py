@@ -1,5 +1,12 @@
 from abc import ABC
-from collections.abc import MutableMapping, MutableSequence, Mapping, Sequence, Set, Iterable
+from collections.abc import (
+    MutableMapping,
+    MutableSequence,
+    Mapping,
+    Sequence,
+    Set,
+    Iterable,
+)
 from copy import deepcopy
 from textwrap import indent
 
@@ -21,7 +28,7 @@ class _NestedBase:
             parts = key[0], key[1:]
         else:
             parts = key
-        if len(parts) == 1 :
+        if len(parts) == 1:
             return (parts[0] if parts[0] or parts[0] == 0 else None), None
         return parts
 
@@ -43,7 +50,11 @@ class _NestedBase:
     @classmethod
     def unwrap(cls, obj, recurse=False):
         obj = obj if not isinstance(obj, __class__) else obj.data
-        if recurse and isinstance(obj, (Mapping, Sequence)) and not isinstance(obj, _strings):
+        if (
+            recurse
+            and isinstance(obj, (Mapping, Sequence))
+            and not isinstance(obj, _strings)
+        ):
             items = obj.items() if isinstance(obj, Mapping) else enumerate(obj)
             for key, value in items:
                 obj[key] = cls.unwrap(value, recurse)
@@ -60,7 +71,11 @@ class _NestedBase:
             if "\n" not in r:
                 return r
             offset = len(r) - len(r.lstrip("[{"))
-            r = r[:offset] + ("\n" if r[offset] != "\n" else "") + indent(r[offset:], "    ")
+            r = (
+                r[:offset]
+                + ("\n" if r[offset] != "\n" else "")
+                + indent(r[offset:], "    ")
+            )
             return r
 
         if isinstance(self, Mapping):
@@ -74,14 +89,16 @@ class _NestedBase:
                 key_repr.append(r)
             return "{{{}}}".format(",\n".join(key_repr))
 
-        else: # Sequence
+        else:  # Sequence
             if not len(self):
                 return "[]"
             if isinstance(self[0], __class__):
-                return "[{}]".format(indent_content(repr(self[0])) + (f"\n...\nx {len(self)}\n" if len(self) > 1 else ""))
+                return "[{}]".format(
+                    indent_content(repr(self[0]))
+                    + (f"\n...\nx {len(self)}\n" if len(self) > 1 else "")
+                )
             else:
                 return repr(list(self))
-
 
 
 class _NestedDict(_NestedBase, MutableMapping):
@@ -89,7 +106,9 @@ class _NestedDict(_NestedBase, MutableMapping):
         self.data = {}
 
         if args and kw:
-            raise TypeError(f"{self.__class__} should either get positional arguments or named arguments")
+            raise TypeError(
+                f"{self.__class__} should either get positional arguments or named arguments"
+            )
         if len(args) == 1 or kw:
             initial_mapping = args[0] or kw
             items = initial_mapping.items()
@@ -98,7 +117,6 @@ class _NestedDict(_NestedBase, MutableMapping):
 
         for key, value in items:
             self[key] = value
-
 
     def __getitem__(self, key):
         key, subpath = self._get_next_component(key)
@@ -114,20 +132,21 @@ class _NestedDict(_NestedBase, MutableMapping):
         self._setitem(path, self.unwrap(data), merging=True)
         return self
 
-    def __setitem__(self, key:str, value: T.Any):
+    def __setitem__(self, key: str, value: T.Any):
         return self._setitem(key, self.unwrap(value), merging=False)
 
-
     def _setitem(self, key: str, value: T.Any, merging: bool):
-        #cyclomatic complexity is my bitch
+        # cyclomatic complexity is my bitch
         if isinstance(value, (_NestedDict, _NestedList)):
             value = value.data
 
         key, subpath = self._get_next_component(key)
 
-        if not key: #we are modifying the key contents at the root of this object
+        if not key:  # we are modifying the key contents at the root of this object
             if not isinstance(value, Mapping):
-                raise TypeError(f"{self.__class__.__name__} root value must be set to a mapping")
+                raise TypeError(
+                    f"{self.__class__.__name__} root value must be set to a mapping"
+                )
             if not merging:
                 self.data = deepcopy(value)
                 return
@@ -148,7 +167,7 @@ class _NestedDict(_NestedBase, MutableMapping):
             else:
                 if isinstance(value, Mapping) and _should_be_a_sequence(value):
                     value = _extract_sequence(value)
-                self.data[key]=value
+                self.data[key] = value
             return
         if subpath:
             if not isinstance(self.data[key], (Mapping, Sequence)):
@@ -174,7 +193,9 @@ class _NestedDict(_NestedBase, MutableMapping):
                 subitem = self[key]
                 for sub_key, sub_value in value.items():
                     subitem._setitem(sub_key, sub_value, merging)
-        elif isinstance(self.data[key], Sequence) and not isinstance(self.data[key], _strings):
+        elif isinstance(self.data[key], Sequence) and not isinstance(
+            self.data[key], _strings
+        ):
             if isinstance(value, Mapping) and key in value:
                 value = value[key]
             self[key].merge(value)
@@ -238,7 +259,7 @@ class _NestedList(_NestedBase, MutableSequence):
         self.data = args
 
     def __getitem__(self, index):
-        #No sense in accepting "*": just take the whole list.
+        # No sense in accepting "*": just take the whole list.
         if isinstance(index, slice):
             return self.__class__(self.data[index])
         if not isinstance(index, int):
@@ -269,7 +290,9 @@ class _NestedList(_NestedBase, MutableSequence):
                     self[i] = item
             return
         if subpath is None:
-            self.data[int(index)] = item if not isinstance(item, NestedData) else item.data
+            self.data[int(index)] = (
+                item if not isinstance(item, NestedData) else item.data
+            )
         else:
             self.wrap(self[index])[subpath] = item
 
@@ -285,13 +308,14 @@ class _NestedList(_NestedBase, MutableSequence):
             del self.data[int(index)]
         del self.wrap(self[index])[subpath]
 
-
-    def insert(self, index,  item):
+    def insert(self, index, item):
         try:
             index = index.__index__()
         except Exception as error:
             raise TypeError from error
-        self.data.insert(int(index), item if not isinstance(item, NestedData) else item.data)
+        self.data.insert(
+            int(index), item if not isinstance(item, NestedData) else item.data
+        )
 
     def merge(self, data, path=None):
         data = self.unwrap(data)
@@ -299,9 +323,11 @@ class _NestedList(_NestedBase, MutableSequence):
             if isinstance(data, Sequence) and not isinstance(data, _strings):
                 if len(self) != len(data):
                     if len(data) == 1:
-                        data = [deepcopy(data[0]    ) for _ in range(len(self))]
+                        data = [deepcopy(data[0]) for _ in range(len(self))]
                     else:
-                        raise ValueError(f"Sequences to merge are not same size. len(self) == {len(self)}, len(data) == {len(data)}")
+                        raise ValueError(
+                            f"Sequences to merge are not same size. len(self) == {len(self)}, len(data) == {len(data)}"
+                        )
                 for item, data_item in zip(self, data):
                     if isinstance(item, NestedData):
                         item.merge(data_item)
@@ -324,7 +350,9 @@ class _NestedList(_NestedBase, MutableSequence):
             elif not subpath:
                 self[i] = data
             else:
-                raise IndexError("Incompatible item with further merging: item {item!r} at position {i} is not a container which could fit {subpath}")
+                raise IndexError(
+                    "Incompatible item with further merging: item {item!r} at position {i} is not a container which could fit {subpath}"
+                )
 
         return self
 
@@ -334,7 +362,10 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
         return False
     if isinstance(obj, Set):
         return True
-    if all(isinstance(k, int) or (isinstance(k, _strings) and k.isdigit()) for k in obj.keys()):
+    if all(
+        isinstance(k, int) or (isinstance(k, _strings) and k.isdigit())
+        for k in obj.keys()
+    ):
         if default:
             return True
         if len(set(map(int, obj.keys()))) == len(obj) and 0 in obj or "0" in obj:
@@ -345,7 +376,10 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
 def _find_best_container(args, kw=None):
     if kw is None:
         kw = {}
-    if len(args) == 1 and (not isinstance(args[0], (Sequence, Mapping, Set)) or isinstance(args[0], _strings)):
+    if len(args) == 1 and (
+        not isinstance(args[0], (Sequence, Mapping, Set))
+        or isinstance(args[0], _strings)
+    ):
         return lambda x: x
     if len(args) == 0 and kw and any(k for k in kw.keys() if not k.isdigit()):
         return _NestedDict
@@ -356,7 +390,6 @@ def _find_best_container(args, kw=None):
     if len(args) > 1:
         return _NestedList
     return _NestedDict
-
 
 
 class NestedData(ABC):
@@ -389,7 +422,7 @@ class NestedData(ABC):
 
     """
 
-    #implemented as a class so that structures can be tested as instances of it.
+    # implemented as a class so that structures can be tested as instances of it.
     # actually this skelleton just a dispatcher factory function, that works
     # as "virtual parent" to the real data structures
     def __new__(cls, *args, **kw):
@@ -404,7 +437,7 @@ class NestedData(ABC):
         """
         pass
 
+
 # Virtual Subclassing so that both "_NestedDict" and "_NestedList"s show up as instances of "NestedData"
 NestedData.register(_NestedDict)
 NestedData.register(_NestedList)
-

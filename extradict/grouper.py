@@ -15,6 +15,7 @@ class Queue:
     are kept in a `collections.deque` instance in the .data attribute.
     One can access .data directly if desired.
     """
+
     __slots__ = ("data", "key", "parent")
 
     def __init__(self, parent: Grouper, key: T.Hashable):
@@ -22,7 +23,7 @@ class Queue:
         self.parent = parent
         self.data = deque()
 
-    def peek(self, default: T.Any=False) -> T.Any:
+    def peek(self, default: T.Any = False) -> T.Any:
         """Return the next available value under this bucket, if any.
         If there is no waiting value, returns the passed in default value,
         or False, if none was given.
@@ -92,7 +93,11 @@ class Grouper(Mapping):
 
     """
 
-    def __init__(self, source: T.Union[T.Sequence, T.Iterable], key: T.Callable[[T.Any], T.Hashable]=None):
+    def __init__(
+        self,
+        source: T.Union[T.Sequence, T.Iterable],
+        key: T.Callable[[T.Any], T.Hashable] = None,
+    ):
         self.key = key if key is not None else lambda x: x
         self.source = iter(source)
         self.data = dict()
@@ -104,7 +109,7 @@ class Grouper(Mapping):
                 raise KeyError(key)
         return self.data[key]
 
-    def fetch_next(self, key: T.Hashable, default: T.Any=SENTINEL):
+    def fetch_next(self, key: T.Hashable, default: T.Any = SENTINEL):
         """Advances consuming the source until a new value for 'key' is fetched.
 
         When source is exhausted, either raises StopIteration or returns the
@@ -167,7 +172,7 @@ class Grouper(Mapping):
         # - check: https://docs.python.org/3/library/itertools.html#itertools-recipes
         deque(self.advance(), maxlen=0)
 
-    def __call__(self, keyhint: T.Container[str]=()) -> dict[T.Hashable, list[T.any]]:
+    def __call__(self, keyhint: T.Container[str] = ()) -> dict[T.Hashable, list[T.any]]:
         """Consumes all the source iterator, and returns a plain dictionay with
         all elements inside lists under the appropriate keys. If keyhint
         is passed, keys for which there are no elements are created with
@@ -187,4 +192,3 @@ class Grouper(Mapping):
 
     def __repr__(self):
         return f"Grouper by {sentinel.__name__}"
-

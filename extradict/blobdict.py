@@ -5,15 +5,18 @@ from threading import RLock
 import math
 
 _OVERHEAD = 3
-_SIZE_MASK = 0x7f
+_SIZE_MASK = 0x7F
 _IN_USE_MASK = 0x80
 
+
 class _BlobSliceSet(MutableSet):
-    def __init__(self,  parent, offset, length):
+    def __init__(self, parent, offset, length):
         self.parent = parent
         self.offset = offset
         self.length = length
-        raw_data = self.parent.data[offset + 1: offset + length + 1].split(b"\x00\x00",1)[0]
+        raw_data = self.parent.data[offset + 1 : offset + length + 1].split(
+            b"\x00\x00", 1
+        )[0]
         self.data = {word.decode("utf-8") for word in raw_data.split(b"\x00")}
 
     def __contains__(self, item):
@@ -50,7 +53,9 @@ class _BlobSets:
         words = set()
         for word in data:
             if "\x00" in word:
-                raise ValueError(f"{self.__class__.__name__} can't contain words with a \\x00 xharacter")
+                raise ValueError(
+                    f"{self.__class__.__name__} can't contain words with a \\x00 xharacter"
+                )
             words.add(word)
         return b"\x00".join(word.encode("utf-8") for word in words)
 
@@ -60,14 +65,14 @@ class _BlobSets:
             raise TypeError("data must be a  non-string iterable of strings")
         with self.lock:
 
-            self.offsets.append(offset:=self._get_next_offset())
+            self.offsets.append(offset := self._get_next_offset())
 
             data_bytes = self._encode(data)
 
             size = len(data_bytes)
             log_req_size = self._get_log_size(size)
 
-            self._ensure_size(offset + 2 ** log_req_size)
+            self._ensure_size(offset + 2**log_req_size)
 
             self.data[offset] = _IN_USE_MASK | log_req_size
             self._force_content(offset, data_bytes)
@@ -89,40 +94,48 @@ class _BlobSets:
             offset = 0
         else:
             last_offset = self.offsets[-1]
-            offset = last_offset + 2**(self.data[last_offset] & _SIZE_MASK)
+            offset = last_offset + 2 ** (self.data[last_offset] & _SIZE_MASK)
         return offset
 
     def _get_log_size(self, byte_size):
         # The "_OVERHEAD" is to ensure space for 1 header byte + 2 byte termination sequence (b"\x00\x00")
-        return math.ceil(max(math.log(byte_size + _OVERHEAD, 2), 3))  # minimal 8 bytes: allow posting a forwarding offset
+        return math.ceil(
+            max(math.log(byte_size + _OVERHEAD, 2), 3)
+        )  # minimal 8 bytes: allow posting a forwarding offset
 
     def _ensure_size(self, req_size):
         with self.lock:
             if len(self.data) < req_size:
                 # ad-hoc heuristics follows: double size until we reach 4MB then go 4MB at a time
-                increase = min(2 ** 22, len(self.data))
+                increase = min(2**22, len(self.data))
                 self.data.extend(b"\x00" * increase)
 
     def _realloc(self, old_offset, new_size):
         with self.lock:
             self._ensure_size(new_size + self.offsets[-1] if self.offsets else 0)
-            content = self.data[old_offset + 1: old_offset + 2 ** (self.data[old_offset] & _SIZE_MASK)]
+            content = self.data[
+                old_offset + 1 : old_offset + 2 ** (self.data[old_offset] & _SIZE_MASK)
+            ]
             self.data[old_offset] &= _SIZE_MASK
-            self.offsets.append(new_offset:=self._get_next_offset())
+            self.offsets.append(new_offset := self._get_next_offset())
             self.data[new_offset] = _IN_USE_MASK | self._get_log_size(new_size)
-            self.data[new_offset + 1: len(content)] = content
-            self.data[old_offset + 1: old_offset + 7] = new_offset.to_bytes(6, "little")
+            self.data[new_offset + 1 : len(content)] = content
+            self.data[old_offset + 1 : old_offset + 7] = new_offset.to_bytes(
+                6, "little"
+            )
         return new_offset
 
     def _final_offset(self, offset):
         "Tracks the final destination of existing data"
         while not (self.data[offset] & _IN_USE_MASK):
-            offset = int.from_bytes(self.data[offset + 1: offset + 7], "little")
+            offset = int.from_bytes(self.data[offset + 1 : offset + 7], "little")
         return offset
 
     def _force_content(self, offset, data_bytes):
         with self.lock:
-            self.data[offset + 1: offset + len(data_bytes) + _OVERHEAD] = data_bytes + b"\x00\x00"
+            self.data[offset + 1 : offset + len(data_bytes) + _OVERHEAD] = (
+                data_bytes + b"\x00\x00"
+            )
 
     def get(self, offset):
         """Retrieves the data contents at the given offset as a set-like object
@@ -137,8 +150,6 @@ class _BlobSets:
         return _BlobSliceSet(self, offset, 2 ** (self.data[offset] & _SIZE_MASK))
 
 
-
-
 class BlobTextDict(UserDict):
     """Mapping wrapper over _BlobSets
 
@@ -146,6 +157,7 @@ class BlobTextDict(UserDict):
     which will hold data in a single binary blob, instead of one
     Python set instance for each entry.
     """
+
     def __init__(self, *args, **kwargs):
         self.blob = _BlobSets()
         super().__init__(*args, **kwargs)
@@ -158,7 +170,7 @@ class BlobTextDict(UserDict):
         try:
             offset = super().__getitem__(key)
         except KeyError:
-            super().__setitem__(key, offset:=self.blob.add_new(set()))
+            super().__setitem__(key, offset := self.blob.add_new(set()))
 
         return self.blob.get(offset)
 

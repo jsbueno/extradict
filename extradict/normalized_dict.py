@@ -63,7 +63,9 @@ class _FallbackNormalizedDict(MutableMapping, Normalizer):
 
     def __init__(self, *args, **kw):
         self.literal = dict(*args, **kw)
-        self.normalized = {self.normalize(key): value for key, value in self.literal.items()}
+        self.normalized = {
+            self.normalize(key): value for key, value in self.literal.items()
+        }
 
     def __getitem__(self, key):
         result = self.literal.get(key, SENTINEL)
@@ -94,10 +96,7 @@ class _FallbackNormalizedDict(MutableMapping, Normalizer):
         return self.normalized.keys()
 
     def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            repr(self.literal)
-        )
+        return "{}({})".format(self.__class__.__name__, repr(self.literal))
 
 
 class FallbackNormalizedDict(MutableMapping, Normalizer):
@@ -128,7 +127,9 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
 
     def get_multi(self, key, default=SENTINEL):
         """Retrieves a list with all values associated the normalized form of the key"""
-        return self.normalized.get(self.normalize(key), default if default is not SENTINEL else [])
+        return self.normalized.get(
+            self.normalize(key), default if default is not SENTINEL else []
+        )
 
     def __getitem__(self, key):
         result = self.literal.get(key, SENTINEL)
@@ -163,7 +164,9 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
             if key in self.literal:
                 original_value = self.literal.pop(key)
             else:
-                raise KeyError(f"For deleting, the exact key used to set a value must be used. {key} not found")
+                raise KeyError(
+                    f"For deleting, the exact key used to set a value must be used. {key} not found"
+                )
             norm_key = self.normalize(key)
             values = self.normalized[norm_key]
             values.remove(original_value)
@@ -178,10 +181,7 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
         return self.normalized.keys()
 
     def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            repr(self.literal)
-        )
+        return "{}({})".format(self.__class__.__name__, repr(self.literal))
 
 
 class NormalizedDict(MutableMapping, Normalizer):
@@ -195,7 +195,9 @@ class NormalizedDict(MutableMapping, Normalizer):
     """
 
     def __init__(self, *args, **kw):
-        self.normalized = {self.normalize(key): value for key, value in dict(*args, **kw).items()}
+        self.normalized = {
+            self.normalize(key): value for key, value in dict(*args, **kw).items()
+        }
 
     def __getitem__(self, key):
         return self.normalized[self.normalize(key)]
@@ -213,7 +215,4 @@ class NormalizedDict(MutableMapping, Normalizer):
         return len(self.normalized)
 
     def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            repr(self.normalized)
-        )
+        return "{}({})".format(self.__class__.__name__, repr(self.normalized))

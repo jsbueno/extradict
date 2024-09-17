@@ -2,6 +2,7 @@ from extradict import VersionDict as VD
 
 import pytest
 
+
 @pytest.fixture
 def vd():
     return VD(a=0, b=1, c=2)

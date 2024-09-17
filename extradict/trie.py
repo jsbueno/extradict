@@ -10,8 +10,9 @@ from .normalized_dict import FallbackNormalizedDict as NormalizedDict
 _WORD_END = "\ufffe"
 _ENTRY_END = "\uffff"
 
+
 class PrefixCharTrie(MutableSet):
-    """ A prefix-based Trie for strings with a Set interface.
+    """A prefix-based Trie for strings with a Set interface.
 
     use "CharTrie[prefix].contents" to retrieve a set of all strings with the given prefix
 
@@ -20,6 +21,7 @@ class PrefixCharTrie(MutableSet):
 
     Use `CharTrie[prefix].copy()` to have an independent data structure.
     """
+
     def __init__(self, initial=None, *, root=None, pattern="", backend=None):
         if backend is None:
             backend = dict
@@ -63,8 +65,8 @@ class PrefixCharTrie(MutableSet):
             return results
         for item in self.data[pattern]:
             if item == _WORD_END:  # It is not because it is used as a singleton around
-                             # that one can use "is": once merged to a string and sliced
-                             # from there you have new instances. (thanks unit tests!)
+                # that one can use "is": once merged to a string and sliced
+                # from there you have new instances. (thanks unit tests!)
                 results.add(pattern)
                 continue
             results.update(subitem for subitem in self._contents(pattern + item))
@@ -78,7 +80,7 @@ class PrefixCharTrie(MutableSet):
             pattern = self.pattern
             for letter in key:
                 if self.backend is not BlobTextDict:
-                    branch  = self.data.setdefault(pattern, set())
+                    branch = self.data.setdefault(pattern, set())
                 else:
                     branch = self.data[pattern]
                 pattern = pattern + letter
@@ -118,10 +120,8 @@ class PrefixCharTrie(MutableSet):
         return f"Trie {('prefixed with ' + repr(self.pattern)) if self.pattern else ''} with {len(self)} elements."
 
 
-
-
 class PatternCharTrie(PrefixCharTrie):
-    """ A pattern-based Trie for strings with a Set interface.
+    """A pattern-based Trie for strings with a Set interface.
 
     use "PatternCharTrie[prefix].contents" to retrieve a set of all strings containing the given pattern
 
@@ -136,7 +136,7 @@ class PatternCharTrie(PrefixCharTrie):
             return
         pattern = ""
         for char in key:
-            branch  = self.data.setdefault(pattern, set())
+            branch = self.data.setdefault(pattern, set())
             pattern += char
             branch.add(char)
 
@@ -145,12 +145,16 @@ class PatternCharTrie(PrefixCharTrie):
             raise ValueError("Invalid character in key")
 
         if self.pattern:
-            raise ValueError("PatternCharTrie cannot add new final values having a selected pattern")
+            raise ValueError(
+                "PatternCharTrie cannot add new final values having a selected pattern"
+            )
 
         pattern = ""
         with self.lock:
             for i in range(len(key)):
-                self._subpattern_add(key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END)
+                self._subpattern_add(
+                    key[i:] + (_WORD_END + key[:i] if i else "") + _ENTRY_END
+                )
 
     def _demangle(self, word):
         if not _WORD_END in word:
@@ -166,7 +170,9 @@ class PatternCharTrie(PrefixCharTrie):
             if item == _ENTRY_END:
                 results.add(self._demangle(pattern))
                 continue
-            results.update(subitem for subitem in __class__._contents(self, pattern + item))
+            results.update(
+                subitem for subitem in __class__._contents(self, pattern + item)
+            )
         return results
 
     def discard(self, key):
@@ -174,10 +180,14 @@ class PatternCharTrie(PrefixCharTrie):
             raise KeyError(f"No item corresponding to {key}")
         with self.lock:
             for i, letter in enumerate(key):
-                #root = self.data[""]
+                # root = self.data[""]
                 partial = letter
-                paths = {partial,}
-                for j, next_letter in enumerate(key[i + 1:] + (_WORD_END if i > 0 else "") + key[0:i]):
+                paths = {
+                    partial,
+                }
+                for j, next_letter in enumerate(
+                    key[i + 1 :] + (_WORD_END if i > 0 else "") + key[0:i]
+                ):
                     partial += next_letter
                     paths.add(partial)
                 self.data[partial].remove(_ENTRY_END)

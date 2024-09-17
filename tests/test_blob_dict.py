@@ -3,7 +3,6 @@ import pytest
 from extradict.blobdict import BlobTextDict, _BlobSets
 
 
-
 def test_blobsets_works():
     a = _BlobSets()
     offset = a.add_new(["a"])
@@ -74,6 +73,7 @@ def test_blobsliceset_add_large():
         b.add(letter)
     assert all(letter in a.get(offset) for letter in text)
     assert a._final_offset(offset) != offset
+
 
 def test_blob_text_dict_stores_character_in_list():
     a = BlobTextDict()

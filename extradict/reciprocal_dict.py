@@ -8,9 +8,9 @@ sentinel = object()
 
 class Behaviors:
     """Enumeration to dictate the possible behaviors of a BijectiveDict."""
-    for name in ('single_permissive', 'single_strict', 'multi'):
-        locals()[name] = name
 
+    for name in ("single_permissive", "single_strict", "multi"):
+        locals()[name] = name
 
 
 class BijectiveDict(MutableMapping):
@@ -25,7 +25,6 @@ class BijectiveDict(MutableMapping):
     Conversely, the generated keys are exposed as "BijectiveDict.generated_keys"
     and can be seen as a dict at "Bijective.generated
     """
-
 
     def __init__(self, *args, **kw):
         data = dict(*args, **kw)
@@ -65,7 +64,7 @@ class BijectiveDict(MutableMapping):
         return iter(self._data)
 
     def __len__(self):
-       return len(self._data)
+        return len(self._data)
 
     @property
     def generated_keys(self):
@@ -135,7 +134,7 @@ class ReversibleDict(MutableMapping):
         return iter(self._data)
 
     def __len__(self):
-       return len(self._data)
+        return len(self._data)
 
     @property
     def generated_keys(self):
