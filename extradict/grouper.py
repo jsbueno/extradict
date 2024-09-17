@@ -191,4 +191,4 @@ class Grouper(Mapping):
         return result
 
     def __repr__(self):
-        return f"Grouper by {sentinel.__name__}"
+        return f"Grouper by {self.key}"

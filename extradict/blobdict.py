@@ -1,5 +1,5 @@
 from collections import UserDict
-from collections.abc import MutableSet
+from collections.abc import MutableSet, Iterable
 from threading import RLock
 
 import math
@@ -30,7 +30,7 @@ class _BlobSliceSet(MutableSet):
 
     def add(self, item):
         self.data.add(item)
-        new_offset = self.parent._store(self.offset, self.data)
+        self.offset = self.parent._store(self.offset, self.data)
 
     def discard(self, item):
         self.data.discard(item)

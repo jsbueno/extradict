@@ -1,8 +1,6 @@
 import sys
 import threading
 
-from collections import defaultdict
-
 _sentinel = object()
 
 

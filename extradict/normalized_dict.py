@@ -121,7 +121,6 @@ class FallbackNormalizedDict(MutableMapping, Normalizer):
         self._update(self.literal)
 
     def _update(self, data):
-        normalized = self.normalized
         for key, value in data.items():
             self._setitem(key, value)
 

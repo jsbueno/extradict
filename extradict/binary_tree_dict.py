@@ -96,7 +96,7 @@ class PlainNode:
             return
         try:
             target_str = "left" if new_key < self_key else "right"
-        except TypeError as error:
+        except TypeError:
             raise KeyError(
                 f"{key!r} {'was converted to ' if type(key) != type(new_key) else 'has'}type {type(new_key)} and cant't be compared with {type(self_key)} "
             )
@@ -120,7 +120,7 @@ class PlainNode:
             return self
         try:
             new_key_smaller = new_key < self_key
-        except TypeError as error:
+        except TypeError:
             raise KeyError(f"{key} type incompatible with other keys in the tree")
 
         if new_key_smaller:

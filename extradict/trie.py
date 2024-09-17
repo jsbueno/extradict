@@ -149,7 +149,6 @@ class PatternCharTrie(PrefixCharTrie):
                 "PatternCharTrie cannot add new final values having a selected pattern"
             )
 
-        pattern = ""
         with self.lock:
             for i in range(len(key)):
                 self._subpattern_add(
