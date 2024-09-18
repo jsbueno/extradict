@@ -439,3 +439,36 @@ def test_nested_data_can_handle_path_components_as_tuples_3():
     a["person", "address"].append("test")
     assert a["person", "address", "0"]
     assert a["person", "address", 0]
+
+
+def test_nested_data_inserting_composite_key_with_0_should_create_list():
+    # as of 0.7b1 this is creating a dictionary with a "0" string as Key
+    # check issue #8
+    a = NestedData()
+    a["list.0"] = 23
+    assert a.data == {"list": [23]}
+    a = NestedData({"list.0": 1, "list.1": 2})
+    assert a.data == {"list": [1, 2]}
+
+
+def test_nested_data_inserting_intermediate_composite_key_with_0_should_create_list():
+    # as of 0.7b1 this is creating a dictionary with a "0" string as Key
+    # check issue #8
+    a = NestedData()
+    a["list.0.test"] = 23
+    assert a.data == {"list": [{"test": 23}]}
+
+def test_nested_data_inserting_intermediate_composite_keys_with_consecutive_0_should_create_lists():
+    # as of 0.7b1 this is creating a dictionary with a "0" string as Key
+    # check issue #8
+    a = NestedData()
+    a["list.0.0.test"] = 23
+    assert a.data == {"list": [[{"test": 23}]]}
+
+def test_nested_data_inserting_composite_key_with_1_should_create_dict():
+    # as of 0.7b1 this is creating a dictionary with a "0" string as Key
+    # check issue #8
+    a = NestedData()
+    a["list.1"] = 42
+    assert a.data == {"list": {"1": 42}}
+

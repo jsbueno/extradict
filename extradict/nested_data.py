@@ -135,7 +135,7 @@ class _NestedDict(_NestedBase, MutableMapping):
     def __setitem__(self, key: str, value: T.Any):
         return self._setitem(key, self.unwrap(value), merging=False)
 
-    def _setitem(self, key: str, value: T.Any, merging: bool):
+    def _setitem(self, key: str, value: T.Any, merging: bool=False):
         # cyclomatic complexity is my bitch
         if isinstance(value, (_NestedDict, _NestedList)):
             value = value.data
@@ -162,7 +162,15 @@ class _NestedDict(_NestedBase, MutableMapping):
 
         if key not in self.data:
             if subpath:
-                self.data[key] = {}
+                prefix_subpath, postfix_subpath = self._get_next_component(subpath)
+                self.data[key] = [] if prefix_subpath == "0" else {}
+                #if :
+                    #self.data[key] = []
+                    #if postfix_subpath is not None:
+                        #value = NestedData({postfix_subpath: value})
+                    #self.data[key].append(value)
+                #else:
+                    #self.data[key] = {}
                 self[key]._setitem(subpath, value, merging)
             else:
                 if isinstance(value, Mapping) and _should_be_a_sequence(value):
@@ -180,7 +188,7 @@ class _NestedDict(_NestedBase, MutableMapping):
                 else:
                     self[key] = {}
             if not merging:
-                self[key][subpath] = value
+                self[key]._setitem(subpath, value, merging)
                 return
             if isinstance(self[key], Sequence):
                 self[key].merge(value, subpath)
@@ -274,7 +282,7 @@ class _NestedList(_NestedBase, MutableSequence):
             return wrapped[subpath]
         return wrapped
 
-    def __setitem__(self, index, item):
+    def __setitem__(self, index, item, allow_growing=False):
         if isinstance(index, slice):
             self.data[index] = item
             return
@@ -289,12 +297,19 @@ class _NestedList(_NestedBase, MutableSequence):
                 else:
                     self[i] = item
             return
+        index = int(index)
+        if allow_growing and index == len(self.data):
+            next_comp = {}
+            prefix_subpath, _ = self._get_next_component(subpath)
+            if prefix_subpath == "0":
+                next_comp = []
+            self.append(next_comp)
         if subpath is None:
-            self.data[int(index)] = (
+            self.data[index] = (
                 item if not isinstance(item, NestedData) else item.data
             )
         else:
-            self.wrap(self[index])[subpath] = item
+            self.wrap(self[index])._setitem(subpath, item)
 
     def __delitem__(self, index):
         if isinstance(index, slice):
@@ -316,6 +331,11 @@ class _NestedList(_NestedBase, MutableSequence):
         self.data.insert(
             int(index), item if not isinstance(item, NestedData) else item.data
         )
+
+    def _setitem(self, index, value, merging=False):
+        # provides simmetry to _NestedDict, so that some codepaths
+        # can be simplified
+        return self.__setitem__(index, value, allow_growing=True)
 
     def merge(self, data, path=None):
         data = self.unwrap(data)
@@ -410,7 +430,7 @@ class NestedData(ABC):
 
 
     The first tool available is the ability to merge mappings with extra keys
-    into existing nested mappings, without deleting non colidng keys:
+    into existing nested mappings, without deleting non coliding keys:
     a "person.address" key that would contain "city" but no "street" or "zip-code"
     can be updated with:  `record["person"].merge({"address": {"street": "5th ave", "zip-code": "000000"}})`
     preserving the "person.address.city" value in the process.
