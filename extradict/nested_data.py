@@ -282,7 +282,12 @@ class _NestedList(_NestedBase, MutableSequence):
             return wrapped[subpath]
         return wrapped
 
-    def __setitem__(self, index, item, allow_growing=False):
+    def __setitem__(self, index, item):
+        return self._setitem(index, item, False, False)
+
+    def _setitem(self, index, item, merging=False, allow_growing=True):
+        ## provides simmetry to _NestedDict, so that some codepaths
+        ## can be simplified
         if isinstance(index, slice):
             self.data[index] = item
             return
@@ -331,11 +336,6 @@ class _NestedList(_NestedBase, MutableSequence):
         self.data.insert(
             int(index), item if not isinstance(item, NestedData) else item.data
         )
-
-    def _setitem(self, index, value, merging=False):
-        # provides simmetry to _NestedDict, so that some codepaths
-        # can be simplified
-        return self.__setitem__(index, value, allow_growing=True)
 
     def merge(self, data, path=None):
         data = self.unwrap(data)
