@@ -264,36 +264,23 @@ def _extract_sequence(obj, default=_sentinel):
                 raise ValueError(f"Not all numeric indexes  present build sequence {obj}")
             elements.append(default if not callable(default) else default())
             counter += 1
-        if len(keys[index]) == 1:
-            _, subpath, full_key = keys[index][0]
+        for j, this_key in enumerate(keys[index]):
+            _, subpath, full_key = this_key
             element = obj[full_key]
             if subpath != "\x00":
                 element = NestedData({subpath: element}).data
-            elements.append(element)
-
-        else:
-            # TODO: do this.
-            raise NotImplementedError("Can't merge elements while extracting sequence")
+            if j == 0:
+                elements.append(element)
+            else:
+                subpath_prefix, subpath_postfix = _get_next_component(subpath)
+                if subpath_postfix is None:
+                    elements[-1].update(element)
+                else:
+                    NestedData(elements[-1]).merge(element)
 
         counter += 1
 
     return elements
-
-
-
-
-
-    #target = int(max(first_comp_keys, key=int))
-    #for i, full_key in zip(range(target + 1), obj.keys()):
-        #element = obj.get(i, obj.get(str(i), _sentinel))
-        ## the sentiel usage in the next lines is completly decoupled:
-        #if element is _sentinel:
-            #if default is not _sentinel:
-                #element = default if not callable(default) else default()
-            #else:
-                #raise ValueError(f"Missing index {i} on NestedData sequence")
-        #elements.append(element)
-    #return elements
 
 
 class _NestedList(_NestedBase, MutableSequence):
@@ -327,7 +314,8 @@ class _NestedList(_NestedBase, MutableSequence):
         return self._setitem(index, item, False, False)
 
     def _setitem(self, index, item, merging=False, allow_growing=True):
-        ## provides simmetry to _NestedDict, so that some codepaths
+        ## __setitem__ delegating to this provides simmetry
+        ## to _NestedDict, so that some codepaths
         ## can be simplified
         if isinstance(index, slice):
             self.data[index] = item

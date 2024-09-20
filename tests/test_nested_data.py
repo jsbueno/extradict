@@ -77,17 +77,18 @@ def test_nested_data_new_data_is_merged_with_path():
     assert a["person.address.cep"] == "01311-902"
 
 
-@pytest.mark.skip # WIP
+
 def test_nested_data_new_data_is_merged_with_list_in_path():
     address = {"city": "São Paulo", "street": "Av. Paulista"}
     extra = {"number": 37, "cep": "01311-902"}
-    a = NestedData({"person.address": {}})
-    a["person.address"] = address
-    a.merge(extra, path="person.address")
-    assert a["person.address.street"] == "Av. Paulista"
-    assert a["person.address.city"] == "São Paulo"
-    assert a["person.address.number"] == 37
-    assert a["person.address.cep"] == "01311-902"
+    a = NestedData({"0.person.address": {}})
+    a["0.person.address"] = address
+    a.merge(extra, path="0.person.address")
+    assert a["0.person.address.street"] == "Av. Paulista"
+    assert a["0.person.address.city"] == "São Paulo"
+    assert a["0.person.address.number"] == 37
+    assert a["0.person.address.cep"] == "01311-902"
+    assert isinstance(a.data, list)
 
 
 def test_nested_data_new_data_is_merged_with_path():
@@ -213,6 +214,17 @@ def test__extract_sequence_composite_key():
     a = {"0.city": "São Paulo", "1.city": "Rio de Janeiro"}
     obj = _extract_sequence(a)
     assert obj == [{"city": "São Paulo"}, {"city": "Rio de Janeiro"}]
+
+
+def test__extract_sequence_merge_items_same_index():
+    a = {"0.city": "São Paulo", "1.city": "Rio de Janeiro", "0.state": "SP"}
+    obj = _extract_sequence(a)
+    assert obj == [{"city": "São Paulo", "state": "SP"}, {"city": "Rio de Janeiro"}]
+
+def test__extract_sequence_merge_deep_items_same_index():
+    a = {"0.some.namespace.city": "São Paulo", "1.city": "Rio de Janeiro", "0.some.namespace.state": "SP"}
+    obj = _extract_sequence(a)
+    assert obj == [{"some": {"namespace": {"city": "São Paulo", "state": "SP"}}}, {"city": "Rio de Janeiro"}]
 
 #########################
 
