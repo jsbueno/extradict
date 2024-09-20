@@ -2,7 +2,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 
 from extradict import NestedData
-from extradict.nested_data import _NestedDict, _NestedList
+from extradict.nested_data import _NestedDict, _NestedList, _extract_sequence
 
 import pytest
 
@@ -59,6 +59,31 @@ def test_nested_data_new_data_is_merged():
     a = NestedData({"person.address": {}})
     a["person.address"] = address
     a["person.address"].merge(extra)
+    assert a["person.address.street"] == "Av. Paulista"
+    assert a["person.address.city"] == "São Paulo"
+    assert a["person.address.number"] == 37
+    assert a["person.address.cep"] == "01311-902"
+
+
+def test_nested_data_new_data_is_merged_with_path():
+    address = {"city": "São Paulo", "street": "Av. Paulista"}
+    extra = {"number": 37, "cep": "01311-902"}
+    a = NestedData({"person.address": {}})
+    a["person.address"] = address
+    a.merge(extra, path="person.address")
+    assert a["person.address.street"] == "Av. Paulista"
+    assert a["person.address.city"] == "São Paulo"
+    assert a["person.address.number"] == 37
+    assert a["person.address.cep"] == "01311-902"
+
+
+@pytest.mark.skip # WIP
+def test_nested_data_new_data_is_merged_with_list_in_path():
+    address = {"city": "São Paulo", "street": "Av. Paulista"}
+    extra = {"number": 37, "cep": "01311-902"}
+    a = NestedData({"person.address": {}})
+    a["person.address"] = address
+    a.merge(extra, path="person.address")
     assert a["person.address.street"] == "Av. Paulista"
     assert a["person.address.city"] == "São Paulo"
     assert a["person.address.number"] == 37
@@ -154,6 +179,15 @@ def test_nested_data_can_delete_deep_elements():
         a["person.address"]
 
 
+#######
+def test__extract_sequence_works():
+    class MyList(list):
+        pass
+    a = MyList([1,2,3])
+    assert type(_extract_sequence(a)) == list and a == [1, 2, 3]
+
+
+
 #########################
 
 
@@ -162,6 +196,15 @@ def test_nested_data_composite_key_creates_sequences_with_numeric_indexes():
     assert a.data == ["São Paulo", "Rio de Janeiro"]
     assert isinstance(a, NestedData)
     assert isinstance(a, Sequence)
+
+def test_nested_data_composite_key_with_a_0_creates_sequence_at_top_level():
+    a = NestedData({"0": "Sáo Paulo"})
+    assert a.data == ["Sáo Paulo"]
+
+    a = NestedData({"0.city": "Sáo Paulo"})
+    assert a.data == [{"city": "São Paulo"}]
+
+
 
 
 def test_nested_data_composite_key_creates_sequences_with_numeric_indexes_as_ints():

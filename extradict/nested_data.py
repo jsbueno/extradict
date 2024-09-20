@@ -238,6 +238,8 @@ class _NestedDict(_NestedBase, MutableMapping):
 
 
 def _extract_sequence(obj, default=_sentinel):
+    if isinstance(obj, Sequence):
+        return list(obj)
     elements = []
     if not obj:
         # Normally not reachable: an empty mapping should be created as a mapping
@@ -382,13 +384,18 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
         return False
     if isinstance(obj, Set):
         return True
+    if isinstance(obj, Sequence):
+        return True
+
+    first_comp_keys = [key.split(".")[0] for key in obj.keys()]
     if all(
         isinstance(k, int) or (isinstance(k, _strings) and k.isdigit())
-        for k in obj.keys()
+        for k in first_comp_keys
     ):
         if default:
             return True
-        if len(set(map(int, obj.keys()))) == len(obj) and 0 in obj or "0" in obj:
+        # otherwise, only True if all numbers, counting from 0 are present:
+        if len(set(map(int, first_comp_keys))) == len(obj) and 0 in obj or "0" in obj:
             return True
     return False
 
