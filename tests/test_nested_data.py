@@ -202,8 +202,12 @@ def test__extract_sequence_from_mapping_simple_key(obj):
 
 def test__extract_sequence_from_incomplete_mapping_raises():
     a = {0: "a", 2: "c"}
+
+    assert _extract_sequence(a, default=None) == ["a", None, "c"]
+    assert _extract_sequence(a, default=lambda: {}) == ["a", {}, "c"]
     with pytest.raises(ValueError):
         _extract_sequence(a)
+
 
 def test__extract_sequence_composite_key():
     a = {"0.city": "São Paulo", "1.city": "Rio de Janeiro"}
@@ -220,10 +224,10 @@ def test_nested_data_composite_key_creates_sequences_with_numeric_indexes():
     assert isinstance(a, Sequence)
 
 def test_nested_data_composite_key_with_a_0_creates_sequence_at_top_level():
-    a = NestedData({"0": "Sáo Paulo"})
-    assert a.data == ["Sáo Paulo"]
+    a = NestedData({"0": "São Paulo"})
+    assert a.data == ["São Paulo"]
 
-    a = NestedData({"0.city": "Sáo Paulo"})
+    a = NestedData({"0.city": "São Paulo"})
     assert a.data == [{"city": "São Paulo"}]
 
 

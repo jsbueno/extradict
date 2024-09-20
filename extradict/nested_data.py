@@ -17,20 +17,23 @@ _sentinel = object()
 _strings = (str, bytes, bytearray)
 
 
+def _get_next_component(key):
+    if key is None:
+        return None, None
+    if isinstance(key, _strings):
+        parts = key.split(".", 1)
+    elif isinstance(key, int):
+        return key, None
+    elif len(key) >= 2:
+        parts = key[0], key[1:]
+    else:
+        parts = key
+    if len(parts) == 1:
+        return (parts[0] if parts[0] or parts[0] == 0 else None), None
+    return parts
+
+
 class _NestedBase:
-    @staticmethod
-    def _get_next_component(key):
-        if key is None:
-            return None, None
-        if isinstance(key, _strings):
-            parts = key.split(".", 1)
-        elif len(key) >= 2:
-            parts = key[0], key[1:]
-        else:
-            parts = key
-        if len(parts) == 1:
-            return (parts[0] if parts[0] or parts[0] == 0 else None), None
-        return parts
 
     @classmethod
     def wrap(cls, obj, clean=True):
@@ -119,7 +122,7 @@ class _NestedDict(_NestedBase, MutableMapping):
             self[key] = value
 
     def __getitem__(self, key):
-        key, subpath = self._get_next_component(key)
+        key, subpath = _get_next_component(key)
         # TBD: upon "key" being a path element that would select multiple components,
         # build and return a NestedDataQuery object
 
@@ -140,7 +143,7 @@ class _NestedDict(_NestedBase, MutableMapping):
         if isinstance(value, (_NestedDict, _NestedList)):
             value = value.data
 
-        key, subpath = self._get_next_component(key)
+        key, subpath = _get_next_component(key)
 
         if not key:  # we are modifying the key contents at the root of this object
             if not isinstance(value, Mapping):
@@ -162,7 +165,7 @@ class _NestedDict(_NestedBase, MutableMapping):
 
         if key not in self.data:
             if subpath:
-                prefix_subpath, postfix_subpath = self._get_next_component(subpath)
+                prefix_subpath, postfix_subpath = _get_next_component(subpath)
                 self.data[key] = [] if prefix_subpath == "0" else {}
                 #if :
                     #self.data[key] = []
@@ -179,7 +182,7 @@ class _NestedDict(_NestedBase, MutableMapping):
             return
         if subpath:
             if not isinstance(self.data[key], (Mapping, Sequence)):
-                next_key, next_subpath = self._get_next_component(subpath)
+                next_key, next_subpath = _get_next_component(subpath)
                 if next_key.isdigit():
                     if next_key == "0":
                         self[key] = [{}]
@@ -214,7 +217,7 @@ class _NestedDict(_NestedBase, MutableMapping):
         if key in self.data:
             del self.data[key]
             return
-        key, subpath = self._get_next_component(key)
+        key, subpath = _get_next_component(key)
         if key not in self.data:
             raise KeyError(key)
         del self[key][subpath]
@@ -223,7 +226,7 @@ class _NestedDict(_NestedBase, MutableMapping):
         return iter(self.data)
 
     def __contains__(self, key):
-        key, subpath = self._get_next_component(key)
+        key, subpath = _get_next_component(key)
         if key not in self.data:
             return False
         if not subpath:
@@ -244,17 +247,53 @@ def _extract_sequence(obj, default=_sentinel):
     if not obj:
         # Normally not reachable: an empty mapping should be created as a mapping
         return elements
-    target = int(max(obj.keys(), key=int))
-    for i in range(target + 1):
-        element = obj.get(i, obj.get(str(i), _sentinel))
-        # the sentiel usage in the next lines is completly decoupled:
-        if element is _sentinel:
-            if default is not _sentinel:
-                element = default if not callable(default) else default()
-            else:
-                raise ValueError(f"Missing index {i} on NestedData sequence")
-        elements.append(element)
+
+    elements = []
+
+    keys = {}
+
+    for full_key in obj.keys():
+        prefix, subpath = _get_next_component(full_key)
+        prefix = int(prefix)
+        keys.setdefault(prefix, []).append((prefix, subpath or "\x00", full_key))
+
+    counter = 0
+    for index in sorted(keys):
+        while index > counter:
+            if default is _sentinel:
+                raise ValueError(f"Not all numeric indexes  present build sequence {obj}")
+            elements.append(default if not callable(default) else default())
+            counter += 1
+        if len(keys[index]) == 1:
+            _, subpath, full_key = keys[index][0]
+            element = obj[full_key]
+            if subpath != "\x00":
+                element = NestedData({subpath: element}).data
+            elements.append(element)
+
+        else:
+            # TODO: do this.
+            raise NotImplementedError("Can't merge elements while extracting sequence")
+
+        counter += 1
+
     return elements
+
+
+
+
+
+    #target = int(max(first_comp_keys, key=int))
+    #for i, full_key in zip(range(target + 1), obj.keys()):
+        #element = obj.get(i, obj.get(str(i), _sentinel))
+        ## the sentiel usage in the next lines is completly decoupled:
+        #if element is _sentinel:
+            #if default is not _sentinel:
+                #element = default if not callable(default) else default()
+            #else:
+                #raise ValueError(f"Missing index {i} on NestedData sequence")
+        #elements.append(element)
+    #return elements
 
 
 class _NestedList(_NestedBase, MutableSequence):
@@ -273,7 +312,7 @@ class _NestedList(_NestedBase, MutableSequence):
         if isinstance(index, slice):
             return self.__class__(self.data[index])
         if not isinstance(index, int):
-            index, subpath = self._get_next_component(index)
+            index, subpath = _get_next_component(index)
         else:
             subpath = None
         if index == "*":
@@ -294,7 +333,7 @@ class _NestedList(_NestedBase, MutableSequence):
             self.data[index] = item
             return
         if not isinstance(index, int):
-            index, subpath = self._get_next_component(index)
+            index, subpath = _get_next_component(index)
         else:
             subpath = None
         if index == "*":
@@ -307,7 +346,7 @@ class _NestedList(_NestedBase, MutableSequence):
         index = int(index)
         if allow_growing and index == len(self.data):
             next_comp = {}
-            prefix_subpath, _ = self._get_next_component(subpath)
+            prefix_subpath, _ = _get_next_component(subpath)
             if prefix_subpath == "0":
                 next_comp = []
             self.append(next_comp)
@@ -323,7 +362,7 @@ class _NestedList(_NestedBase, MutableSequence):
             del self.data[index]
             return
         if not isinstance(index, int):
-            index, subpath = self._get_next_component(index)
+            index, subpath = _get_next_component(index)
         else:
             subpath = None
         if subpath is None:
@@ -356,7 +395,7 @@ class _NestedList(_NestedBase, MutableSequence):
                 return self
             raise ValueError("Trying to merge a mapping into a sequence")
         elif isinstance(path, str):
-            key, subpath = self._get_next_component(path)
+            key, subpath = _get_next_component(path)
             if not key:
                 raise IndexError("No index to perform merging on")
         else:
@@ -387,7 +426,7 @@ def _should_be_a_sequence(obj, default=_sentinel, **kw):
     if isinstance(obj, Sequence):
         return True
 
-    first_comp_keys = [key.split(".")[0] for key in obj.keys()]
+    first_comp_keys = [_get_next_component(key)[0] for key in obj.keys()]
     if all(
         isinstance(k, int) or (isinstance(k, _strings) and k.isdigit())
         for k in first_comp_keys
