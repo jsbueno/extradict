@@ -456,5 +456,4 @@ making it ideal for real world text-completion finding.
 ['maca', 'maçã']
 ```
 
-```
 
