@@ -187,6 +187,28 @@ def test__extract_sequence_works():
     assert type(_extract_sequence(a)) == list and a == [1, 2, 3]
 
 
+@pytest.mark.parametrize(
+    ("obj", ), [
+        ({0: "a", 1: "b", 2: "c"},),
+        ({0: "a", "1": "b", "2": "c"},),
+        ({"0": "a", "1": "b", "2": "c"},),
+        ({"0": "a", 1: "b", 2: "c"},),
+    ]
+)
+def test__extract_sequence_from_mapping_simple_key(obj):
+    expected = ["a", "b", "c"]
+
+    assert _extract_sequence(obj) == expected
+
+def test__extract_sequence_from_incomplete_mapping_raises():
+    a = {0: "a", 2: "c"}
+    with pytest.raises(ValueError):
+        _extract_sequence(a)
+
+def test__extract_sequence_composite_key():
+    a = {"0.city": "São Paulo", "1.city": "Rio de Janeiro"}
+    obj = _extract_sequence(a)
+    assert obj == [{"city": "São Paulo"}, {"city": "Rio de Janeiro"}]
 
 #########################
 
