@@ -77,7 +77,6 @@ def test_nested_data_new_data_is_merged_with_path():
     assert a["person.address.cep"] == "01311-902"
 
 
-
 def test_nested_data_new_data_is_merged_with_list_in_path():
     address = {"city": "São Paulo", "street": "Av. Paulista"}
     extra = {"number": 37, "cep": "01311-902"}
@@ -184,22 +183,25 @@ def test_nested_data_can_delete_deep_elements():
 def test__extract_sequence_works():
     class MyList(list):
         pass
-    a = MyList([1,2,3])
+
+    a = MyList([1, 2, 3])
     assert type(_extract_sequence(a)) == list and a == [1, 2, 3]
 
 
 @pytest.mark.parametrize(
-    ("obj", ), [
+    ("obj",),
+    [
         ({0: "a", 1: "b", 2: "c"},),
         ({0: "a", "1": "b", "2": "c"},),
         ({"0": "a", "1": "b", "2": "c"},),
         ({"0": "a", 1: "b", 2: "c"},),
-    ]
+    ],
 )
 def test__extract_sequence_from_mapping_simple_key(obj):
     expected = ["a", "b", "c"]
 
     assert _extract_sequence(obj) == expected
+
 
 def test__extract_sequence_from_incomplete_mapping_raises():
     a = {0: "a", 2: "c"}
@@ -221,10 +223,19 @@ def test__extract_sequence_merge_items_same_index():
     obj = _extract_sequence(a)
     assert obj == [{"city": "São Paulo", "state": "SP"}, {"city": "Rio de Janeiro"}]
 
+
 def test__extract_sequence_merge_deep_items_same_index():
-    a = {"0.some.namespace.city": "São Paulo", "1.city": "Rio de Janeiro", "0.some.namespace.state": "SP"}
+    a = {
+        "0.some.namespace.city": "São Paulo",
+        "1.city": "Rio de Janeiro",
+        "0.some.namespace.state": "SP",
+    }
     obj = _extract_sequence(a)
-    assert obj == [{"some": {"namespace": {"city": "São Paulo", "state": "SP"}}}, {"city": "Rio de Janeiro"}]
+    assert obj == [
+        {"some": {"namespace": {"city": "São Paulo", "state": "SP"}}},
+        {"city": "Rio de Janeiro"},
+    ]
+
 
 #########################
 
@@ -235,14 +246,13 @@ def test_nested_data_composite_key_creates_sequences_with_numeric_indexes():
     assert isinstance(a, NestedData)
     assert isinstance(a, Sequence)
 
+
 def test_nested_data_composite_key_with_a_0_creates_sequence_at_top_level():
     a = NestedData({"0": "São Paulo"})
     assert a.data == ["São Paulo"]
 
     a = NestedData({"0.city": "São Paulo"})
     assert a.data == [{"city": "São Paulo"}]
-
-
 
 
 def test_nested_data_composite_key_creates_sequences_with_numeric_indexes_as_ints():
@@ -417,6 +427,15 @@ def test_sequence_root_can_be_merged():
     assert x.data == z
 
 
+def test_nested_data_deep_merging():
+    a1 = NestedData([{"b": [{"c": 0}]}, {"c": [{}, {"c": 0}]}])
+
+    a2 = [{"b": [{"d": 1}]}, {"c": [{}, {"d": 2}]}]
+
+    a1.merge(a2)
+    assert a1.data == [{"b": [{"c": 0, "d": 1}]}, {"c": [{}, {"c": 0, "d": 2}]}]
+
+
 @pytest.mark.parametrize(
     ("merge_length", "success"), [(2, False), (4, False), (1, True), (3, True)]
 )
@@ -539,6 +558,7 @@ def test_nested_data_inserting_intermediate_composite_key_with_0_should_create_l
     a["list.0.test"] = 23
     assert a.data == {"list": [{"test": 23}]}
 
+
 def test_nested_data_inserting_intermediate_composite_keys_with_consecutive_0_should_create_lists():
     # as of 0.7b1 this is creating a dictionary with a "0" string as Key
     # check issue #8
@@ -546,10 +566,10 @@ def test_nested_data_inserting_intermediate_composite_keys_with_consecutive_0_sh
     a["list.0.0.test"] = 23
     assert a.data == {"list": [[{"test": 23}]]}
 
+
 def test_nested_data_inserting_composite_key_with_1_should_create_dict():
     # as of 0.7b1 this is creating a dictionary with a "0" string as Key
     # check issue #8
     a = NestedData()
     a["list.1"] = 42
     assert a.data == {"list": {"1": 42}}
-
