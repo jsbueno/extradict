@@ -157,7 +157,7 @@ class Extractor:
         # in python 3.13, the line number can be fetched with instruction.line_number, directly.
         instructions = [instruction for instruction in dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno) if instruction.positions.lineno==f.f_lineno]
         for instruction in reversed(instructions):
-            if "STORE_FAST" not in instruction.opname:
+            if "STORE_" not in instruction.opname:  # STORE_FAST_STORE_FAST, STORE_FAST, STORE_GLOBAL
                 break
             if isinstance(argval:=instruction.argval, tuple):
                 targets.extend(reversed(argval))
