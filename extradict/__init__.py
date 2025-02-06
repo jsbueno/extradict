@@ -3,7 +3,7 @@ from .version_dict import VersionDict
 from .version_dict import OrderedVersionDict
 from .normalized_dict import FallbackNormalizedDict
 from .normalized_dict import NormalizedDict
-from .map_getter import MapGetter
+from .map_getter import MapGetter, Extractor
 from .reciprocal_dict import BijectiveDict
 from .extratuple import namedtuple
 from .extratuple import defaultnamedtuple

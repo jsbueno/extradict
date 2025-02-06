@@ -1,5 +1,7 @@
 import sys
 import threading
+import contextvars
+import dis, sys, inspect
 
 _sentinel = object()
 
@@ -119,3 +121,72 @@ class MapGetter(object):
     def __exit__(self, type, value, traceback):
         self.builtins["__import__"] = self.original_import
         return False
+
+
+
+class Extractor:
+    instances = {}
+    def __new__(cls, source):
+        frame = sys._getframe()
+        while True:
+            frame = frame.f_back
+            # Skip debugger frames if any -
+            if not frame.f_globals["__file__"].endswith(("pdb.py", "gdb,py")):
+                break
+        # Maybe we could replace ourselves in the frame for an instance?
+        file, lineno = id = frame.f_globals.get("__file__"), frame.f_lineno
+        if id not in cls.instances:
+            instance = cls.instances[id] = super().__new__(cls)
+            instance.target_iterator = contextvars.ContextVar("target_iterator", default=None)
+            instance.frame = frame
+            instance._get_targets()
+        else:
+            instance = cls[instances[id]]
+
+        instance.frame = frame
+
+        # ATTENTION: although we do cache the instance, with the targets  __init__ is executed every time
+        return instance
+
+    def __init__(self, source):
+        self.source = source
+
+    def _get_targets(self):
+        targets = []
+        f = self.frame
+        # in python 3.13, the line number can be fetched with instruction.line_number, directly.
+        instructions = [instruction for instruction in dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno) if instruction.positions.lineno==f.f_lineno]
+        for instruction in reversed(instructions):
+            if "STORE_FAST" not in instruction.opname:
+                break
+            if isinstance(argval:=instruction.argval, tuple):
+                targets.extend(reversed(argval))
+            else:
+                targets.append(argval)
+        self.targets = reversed(targets)
+
+        # TBD: have a fallback with dis module for older Python's?
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __getitem__(self, index):
+        # xx = [instruction for instruction in dis.get_instructions(frame.f_code, first_line=frame.f_code.co_firstlineno)]
+        values = []
+        if not (targets:=self.target_iterator.get()):
+            self.target_iterator.set(targets:=iter(self.targets))
+        target_name = next(targets, None)
+        if target_name is None:
+            self.target_iterator.set(None)
+            raise IndexError()
+
+        try:
+            value = self.source.__getitem__(target_name)
+        except KeyError:
+            value = getattr(self.source, target_name)
+        return value
+
+
+if sys.implementation.name == "pypy":
+    def Extractor(*args, **kw):
+        raise NotImplementedError("Extractor functionality not implemented for Pypy")

@@ -2,8 +2,11 @@
 
 import enum
 import threading
+import sys
 
-from extradict import MapGetter
+import pytest
+
+from extradict import MapGetter, Extractor
 
 
 def test_mapgetter_creates_local_variables():
@@ -168,3 +171,16 @@ def test_mapgetter_works_with_enums():
     assert bar is A.bar
     assert baz is A.baz
     assert foo.value == 0
+
+# Chck this: skipping with pypy, but maybe it is a Python < 3.12 thing.
+@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
+#@pytest.mark.skipif(sys.version_info < (3,13), reason="Not ready for older Pythons yet implemented for PyPy")
+def test_extractor_extracts_to_local_variables():
+    E = Extractor
+    data = {"a": 1, "b": 2, "c": 3}
+
+    a, b, c = E(data)
+
+    assert a == 1
+    assert b == 2
+    assert c == 3
