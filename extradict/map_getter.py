@@ -2,6 +2,7 @@ import sys
 import threading
 import contextvars
 import dis, sys, inspect
+import itertools
 
 _sentinel = object()
 
@@ -137,35 +138,65 @@ class Extractor:
         file, lineno = id = frame.f_globals.get("__file__"), frame.f_lineno
         if id not in cls.instances:
             instance = cls.instances[id] = super().__new__(cls)
-            instance.target_iterator = contextvars.ContextVar("target_iterator", default=None)
-            instance.frame = frame
-            instance._get_targets()
+            instance._get_targets(frame)
+            # do not create constextvars that won't be used.
+            if len(instance.targets) > 1:
+                instance.target_iterator = contextvars.ContextVar("target_iterator", default=None)
+                instance.source = contextvars.ContextVar("source", default=None)
         else:
             instance = cls[instances[id]]
 
-        instance.frame = frame
+        if len(instance.targets) == 1:
+            return instance._get_item_or_attr(source, instance.targets[0])
 
-        # ATTENTION: although we do cache the instance, with the targets  __init__ is executed every time
+        instance.source.set(source)
+        #if there is mote than one attr to extract,
+        #Python will call __getitem__ once for each target:
         return instance
 
-    def __init__(self, source):
-        self.source = source
-
-    def _get_targets(self):
+    def _get_targets(self, frame):
         targets = []
-        f = self.frame
+        f = frame
         # in python 3.13, the line number can be fetched with instruction.line_number, directly.
-        instructions = [instruction for instruction in dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno) if instruction.positions.lineno==f.f_lineno]
-        for instruction in reversed(instructions):
-            if "STORE_" not in instruction.opname:  # STORE_FAST_STORE_FAST, STORE_FAST, STORE_GLOBAL
+        line_number = f.f_lineno
+
+
+
+        instructions =  dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno)
+        instructions = list(itertools.takewhile(
+            lambda instr: (not instr.positions) or (not instr.positions.lineno) or instr.positions.lineno <= line_number,
+            (instr for instr in dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno) if not instr.positions or not instr.positions.lineno or instr.positions.lineno>=line_number)
+        ))
+
+        index = -1
+        while True:
+            if instructions[index].opname in ("CALL", "CALL_KW", "CALL_FUNCTION_EX"):
                 break
-            if isinstance(argval:=instruction.argval, tuple):
-                targets.extend(reversed(argval))
+            index -= 1
+        else:
+            raise RuntimeError("Could not resolve Extractor targets")
+
+        # good for debugging:
+        #x1 = [(i.opname, i.argval) for i in instructions]
+        for instruction  in instructions[index:]:
+
+            if "STORE_" not in instruction.opname:  # STORE_FAST_STORE_FAST, STORE_FAST, STORE_GLOBAL, STORE_NAME, STORE_DEREF
+                continue
+            if isinstance(argval:=instruction.argval, tuple):  # STORE_FAST_STORE_FAST
+                targets.extend(argval)
             else:
                 targets.append(argval)
-        self.targets = reversed(targets)
+        self.targets = targets
 
-        # TBD: have a fallback with dis module for older Python's?
+        # TBD: have a fallback with inspect.get_source module for older Python's?
+
+    def _get_item_or_attr(self, source,  name):
+        try:
+            value = source.__getitem__(name)
+        except (KeyError, AttributeError, TypeError) :
+            value = getattr(source, name)
+        return value
+
 
     def __len__(self):
         return len(self.targets)
@@ -178,13 +209,9 @@ class Extractor:
         target_name = next(targets, None)
         if target_name is None:
             self.target_iterator.set(None)
+            self.source.set(None)
             raise IndexError()
-
-        try:
-            value = self.source.__getitem__(target_name)
-        except KeyError:
-            value = getattr(self.source, target_name)
-        return value
+        return self._get_item_or_attr(self.source.get(), target_name)
 
 
 if sys.implementation.name == "pypy":
