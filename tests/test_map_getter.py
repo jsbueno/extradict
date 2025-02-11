@@ -172,8 +172,6 @@ def test_mapgetter_works_with_enums():
     assert baz is A.baz
     assert foo.value == 0
 
-# Check this: skipping with pypy, but maybe it is a Python < 3.12 thing.
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_single_local_variable():
     E = Extractor
     data = {"a": 1, "b": 2, "c": 3}
@@ -183,8 +181,6 @@ def test_extractor_extracts_to_single_local_variable():
 
     assert b == 2
 
-# Check this: skipping with pypy, but maybe it is a Python < 3.12 thing.
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_local_variables():
     E = Extractor
     data = {"a": 1, "b": 2, "c": 3}
@@ -196,7 +192,6 @@ def test_extractor_extracts_to_local_variables():
     assert c == 3
 
 
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_local_variables_dangling_data():
     E = Extractor
     data = {"@": 0, "a": 1, "b": 2, "c": 3, "d": 4}
@@ -210,7 +205,6 @@ def test_extractor_extracts_to_local_variables_dangling_data():
 
 global_a = global_b = global_c = -1
 
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_global_variables():
     global global_a, global_b, global_c
 
@@ -226,7 +220,6 @@ def test_extractor_extracts_to_global_variables():
     assert global_c == 3
 
 
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_single_global_variable():
     global global_a, global_b, global_c
 
@@ -243,7 +236,6 @@ def test_extractor_extracts_to_single_global_variable():
 
 
 
-@pytest.mark.skipif(sys.implementation.name == "pypy", reason="Not implemented for PyPy")
 def test_extractor_extracts_to_nonlocal_variables():
 
     a = b = c = None

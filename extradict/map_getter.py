@@ -188,7 +188,19 @@ class Extractor:
                 targets.append(argval)
         self.targets = targets
 
-        # TBD: have a fallback with inspect.get_source module for older Python's?
+
+    def _get_targets_using_source(self, frame):
+        # FIXME: this is less capable than the assembler based version -
+        # as it doesn't support an statement broken into multiple lines.
+        f = frame
+        source = inspect.getsource(f.f_code)
+        assign_line = source.split("\n")[f.f_lineno - f.f_code.co_firstlineno]
+        targets_str = assign_line.split("=")[0]
+        self.targets = [target.strip() for target in targets_str.split(",")]
+
+
+    if sys.version_info < (3,11):
+        _get_targets = _get_targets_using_source
 
     def _get_item_or_attr(self, source,  name):
         try:
@@ -213,7 +225,3 @@ class Extractor:
             raise IndexError()
         return self._get_item_or_attr(self.source.get(), target_name)
 
-
-if sys.implementation.name == "pypy":
-    def Extractor(*args, **kw):
-        raise NotImplementedError("Extractor functionality not implemented for Pypy")
