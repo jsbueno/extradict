@@ -87,6 +87,13 @@ def test_blob_text_dict_has_default_sets():
     assert "a" in a["test"]
 
 
+def test_blob_text_dict_can_turn_default_off():
+    a = BlobTextDict(setdefault=False)
+    with pytest.raises(KeyError):
+        a["test"].add("a")
+    with pytest.raises(AttributeError):
+        a.get("test").add("a")
+
 def test_blob_text_dict_wont_crash_memory_resize():
     aa = BlobTextDict()
     aa["a"] = ["a" * 10000]

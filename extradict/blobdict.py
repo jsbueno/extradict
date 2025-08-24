@@ -10,11 +10,11 @@ keep growing, and will only allocate new entries past the current buffer end,
 and grow the buffer (the bytearray at `BlobSets.data`) as it goes.
 """
 
-
 from collections import UserDict
-from collections.abc import MutableSet, Iterable
+from collections.abc import MutableSet, Iterable, Mapping, Sequence
 from threading import RLock
 
+import typing as t
 import math
 
 
@@ -157,24 +157,56 @@ class _BlobSets:
         Automatically picks the new offset if the orignal data has been realocated
         at some point.
 
-        (as of Python 3.12 an ampty set is 216 bytes long on x86_64 -
+        (as of Python 3.12 an empty set is 216 bytes long on x86_64 -
         we are down to 16 or 20 bytes per entry with up to 3 single characters here)
         """
         offset = self._final_offset(offset)
         return _BlobSliceSet(self, offset, 2 ** (self.data[offset] & _SIZE_MASK))
 
 
-class BlobTextDict(UserDict):
+K = t.TypeVar("K", bound=str)
+V = t.TypeVar("V", bound=MutableSet[str])
+
+
+class BlobTextDict(UserDict[K, V]):
     """Mapping wrapper over _BlobSets
 
     A dictionary with arbitrary keys and sets of string as values
     which will hold data in a single binary blob, instead of one
     Python set instance for each entry.
+
+    Unlike regular dictionaries, though, it is parametrizable - so
+        key/value pairs passed to the constructor should be
+        be passed as a mapping itself in the first positional argument
+        "data"
+
+    This data structure has been created to back the ExtraTrie class,
+        so that each trie sub-entry doesn't need a "real" Python set -
+        which becomes really fat and slow - instead, a single
+        bytearray object is allocated to contain all strings, retrievable
+        by key with a set-like interface. It probably can be used as
+        a backend for other data-structures as well.
+
+    Args:
+        data: an optional initializer for the dicts contents.
+            Keep in mind that all values should be a container of strings
+        setdefault: If set, indicates that upon retrieval of an arbitrary
+            key with the regular [] notation, if it doesn't exist, a new key is created containing a set-like
+            object - i.e.  mydict[key] is equivalent to `mydict.setdefault(key, _BLobSliceSet())`
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        data: (
+            t.Iterable[tuple[t.Hashable, t.Iterable[str]]]
+            | t.Mapping[t.Hashable, t.Iterable[str]]
+        ) = (),
+        *,
+        setdefault=True,
+    ):
+        self.setdefault_on_get = setdefault
         self.blob = _BlobSets()
-        super().__init__(*args, **kwargs)
+        super().__init__(data)
 
     def __setitem__(self, key, value: "Iterable[str]"):
         value_offset = self.blob.add_new(value)
@@ -184,6 +216,8 @@ class BlobTextDict(UserDict):
         try:
             offset = super().__getitem__(key)
         except KeyError:
+            if not self.setdefault_on_get:
+                raise
             super().__setitem__(key, offset := self.blob.add_new(set()))
 
         return self.blob.get(offset)

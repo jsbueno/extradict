@@ -9,7 +9,7 @@ from operator import le as le_op, ge as ge_op
 _empty = object()
 
 
-class EmptyNode:
+class _EmptyNode:
     __slots__ = ()
     depth = 0
     value = None
@@ -37,7 +37,7 @@ class EmptyNode:
         raise KeyError(key)
 
 
-EmptyNode = EmptyNode()  # The KISS Singleton
+EmptyNode = _EmptyNode()  # The KISS Singleton
 
 
 class PlainNode:

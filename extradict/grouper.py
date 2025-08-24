@@ -172,7 +172,7 @@ class Grouper(Mapping):
         # - check: https://docs.python.org/3/library/itertools.html#itertools-recipes
         deque(self.advance(), maxlen=0)
 
-    def __call__(self, keyhint: T.Container[str] = ()) -> dict[T.Hashable, list[T.any]]:
+    def __call__(self, keyhint: T.Container[str] = ()) -> dict[T.Hashable, list[T.Any]]:
         """Consumes all the source iterator, and returns a plain dictionay with
         all elements inside lists under the appropriate keys. If keyhint
         is passed, keys for which there are no elements are created with
