@@ -1,8 +1,22 @@
+"""
+Crude data structures designed to hold the internal data for the the TrieDict
+
+These can be evolved to having a better performance and be more user-friendly - as
+far as they are kept compatible with the use "ExtraTrie"  makes of them -
+
+remarkably, upon deletion or data realocation, there is no re-use of
+freed buffer areas in `_BlobSets` - the data structure will just
+keep growing, and will only allocate new entries past the current buffer end,
+and grow the buffer (the bytearray at `BlobSets.data`) as it goes.
+"""
+
+
 from collections import UserDict
 from collections.abc import MutableSet, Iterable
 from threading import RLock
 
 import math
+
 
 _OVERHEAD = 3
 _SIZE_MASK = 0x7F
@@ -37,7 +51,7 @@ class _BlobSliceSet(MutableSet):
         self.parent._force_content(self.offset, self.parent._encode(self.data))
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({{{', '.join(self)}}})"
+        return f"{self.__class__.__name__}({{{', '.join(map(repr, self))}}})"
 
 
 class _BlobSets:
@@ -105,14 +119,14 @@ class _BlobSets:
 
     def _ensure_size(self, req_size):
         with self.lock:
-            if len(self.data) < req_size:
+            while len(self.data) < req_size:
                 # ad-hoc heuristics follows: double size until we reach 4MB then go 4MB at a time
                 increase = min(2**22, len(self.data))
                 self.data.extend(b"\x00" * increase)
 
     def _realloc(self, old_offset, new_size):
         with self.lock:
-            self._ensure_size(new_size + self.offsets[-1] if self.offsets else 0)
+            self._ensure_size(new_size + self._get_next_offset())
             content = self.data[
                 old_offset + 1 : old_offset + 2 ** (self.data[old_offset] & _SIZE_MASK)
             ]

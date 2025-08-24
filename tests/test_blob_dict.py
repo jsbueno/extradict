@@ -85,3 +85,17 @@ def test_blob_text_dict_has_default_sets():
     a = BlobTextDict()
     a["test"].add("a")
     assert "a" in a["test"]
+
+
+def test_blob_text_dict_wont_crash_memory_resize():
+    aa = BlobTextDict()
+    aa["a"] = ["a" * 10000]
+    assert len(aa.blob.data) >= 16384
+
+def test_blob_text_dict_wont_crash_on_second_realloc():
+    aa = BlobTextDict()
+    aa["a"] = ["abc"]
+    aa["b"] = ["def"]
+    aa["c"] = ["ghi"]
+    aa["b"].add("b" * 1500)
+    aa["a"].add("jkl")
