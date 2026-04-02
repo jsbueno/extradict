@@ -62,7 +62,7 @@ class MapGetter(object):
     >>> print((b, c))
     (1, 2)
 
-    It is intesresting to note that it will work for ordinary attributes
+    It is interesting to note that it will work for ordinary attributes
     from Python objects, and, as well, for constant names inside a Python
     enum.Enum class. That may be the major use case of this:
 
@@ -110,8 +110,6 @@ class MapGetter(object):
         # no other func gets "from_list" and all the machinery expects the actual
         # module to be created on sys.modules - which we don't want.
 
-        # FIXME: Make this asyncio safe as well.
-        # (May wait for Python 3.7 with PEP-555 implemented)
         if (
             threading.current_thread() != self._thread
             or sys._getframe().f_back.f_locals.get(name, None) is not self.mapping
@@ -124,15 +122,15 @@ class MapGetter(object):
         return False
 
 
-
 class Extractor:
     instances = {}
+
     def __new__(cls, source):
         frame = sys._getframe()
         while True:
             frame = frame.f_back
             # Skip debugger frames if any -
-            if not frame.f_globals["__file__"].endswith(("pdb.py", "gdb,py")):
+            if not frame.f_globals["__file__"].endswith(("pdb.py", "gdb.py")):
                 break
         # Maybe we could replace ourselves in the frame for an instance?
         file, lineno = id = frame.f_globals.get("__file__"), frame.f_lineno
@@ -141,7 +139,9 @@ class Extractor:
             instance._get_targets(frame)
             # do not create constextvars that won't be used.
             if len(instance.targets) > 1:
-                instance.target_iterator = contextvars.ContextVar("target_iterator", default=None)
+                instance.target_iterator = contextvars.ContextVar(
+                    "target_iterator", default=None
+                )
                 instance.source = contextvars.ContextVar("source", default=None)
         else:
             instance = cls[instances[id]]
@@ -150,8 +150,8 @@ class Extractor:
             return instance._get_item_or_attr(source, instance.targets[0])
 
         instance.source.set(source)
-        #if there is mote than one attr to extract,
-        #Python will call __getitem__ once for each target:
+        # if there is mote than one attr to extract,
+        # Python will call __getitem__ once for each target:
         return instance
 
     def _get_targets(self, frame):
@@ -160,34 +160,63 @@ class Extractor:
         # in python 3.13, the line number can be fetched with instruction.line_number, directly.
         line_number = f.f_lineno
 
+        instructions = dis.get_instructions(
+            f.f_code, first_line=f.f_code.co_firstlineno
+        )
+        try:
+            instructions = list(
+                itertools.takewhile(
+                    lambda instr: (not instr.positions)
+                    or (not instr.positions.lineno)
+                    or instr.positions.lineno <= line_number,
+                    (
+                        instr
+                        for instr in dis.get_instructions(
+                            f.f_code, first_line=f.f_code.co_firstlineno
+                        )
+                        if not instr.positions
+                        or not instr.positions.lineno
+                        or instr.positions.lineno >= line_number
+                    ),
+                )
+            )
+        except IndexError:
+            import sys
 
+            if sys.implementation.name == "pypy":
+                raise RuntimeError(
+                    "Could not inspect Extractor targets: this is known  to not work in nested functions in newer pypy versions"
+                )
+            raise RuntimeError(
+                "Could not inspect Extractor targets. Might be a change in Python implementation"
+            )
 
-        instructions =  dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno)
-        instructions = list(itertools.takewhile(
-            lambda instr: (not instr.positions) or (not instr.positions.lineno) or instr.positions.lineno <= line_number,
-            (instr for instr in dis.get_instructions(f.f_code, first_line=f.f_code.co_firstlineno) if not instr.positions or not instr.positions.lineno or instr.positions.lineno>=line_number)
-        ))
-
-        index = -1
-        while True:
-            if instructions[index].opname in ("CALL", "CALL_KW", "CALL_FUNCTION_EX"):
+        index = len(instructions) - 1
+        while index > 0:
+            if instructions[index].opname in (
+                "CALL",
+                "CALL_KW",
+                "CALL_FUNCTION_EX",
+                "CALL_FUNCTION",
+            ):
                 break
             index -= 1
         else:
             raise RuntimeError("Could not resolve Extractor targets")
 
         # good for debugging:
-        #x1 = [(i.opname, i.argval) for i in instructions]
-        for instruction  in instructions[index:]:
+        # x1 = [(i.opname, i.argval) for i in instructions]
+        for instruction in instructions[index:]:
 
-            if "STORE_" not in instruction.opname:  # STORE_FAST_STORE_FAST, STORE_FAST, STORE_GLOBAL, STORE_NAME, STORE_DEREF
+            if (
+                "STORE_" not in instruction.opname
+            ):  # STORE_FAST_STORE_FAST, STORE_FAST, STORE_GLOBAL, STORE_NAME, STORE_DEREF
                 continue
-            if isinstance(argval:=instruction.argval, tuple):  # STORE_FAST_STORE_FAST
+            if isinstance(argval := instruction.argval, tuple):  # STORE_FAST_STORE_FAST
                 targets.extend(argval)
             else:
                 targets.append(argval)
         self.targets = targets
-
 
     def _get_targets_using_source(self, frame):
         # FIXME: this is less capable than the assembler based version -
@@ -198,17 +227,15 @@ class Extractor:
         targets_str = assign_line.split("=")[0]
         self.targets = [target.strip() for target in targets_str.split(",")]
 
-
-    if sys.version_info < (3,11):
+    if sys.version_info < (3, 11):
         _get_targets = _get_targets_using_source
 
-    def _get_item_or_attr(self, source,  name):
+    def _get_item_or_attr(self, source, name):
         try:
             value = source.__getitem__(name)
-        except (KeyError, AttributeError, TypeError) :
+        except (KeyError, AttributeError, TypeError):
             value = getattr(source, name)
         return value
-
 
     def __len__(self):
         return len(self.targets)
@@ -216,12 +243,11 @@ class Extractor:
     def __getitem__(self, index):
         # xx = [instruction for instruction in dis.get_instructions(frame.f_code, first_line=frame.f_code.co_firstlineno)]
         values = []
-        if not (targets:=self.target_iterator.get()):
-            self.target_iterator.set(targets:=iter(self.targets))
+        if not (targets := self.target_iterator.get()):
+            self.target_iterator.set(targets := iter(self.targets))
         target_name = next(targets, None)
         if target_name is None:
             self.target_iterator.set(None)
             self.source.set(None)
             raise IndexError()
         return self._get_item_or_attr(self.source.get(), target_name)
-

@@ -135,7 +135,7 @@ def test_mapgetter_works_with_defaultdict():
 
 def test_mapgetter_works_with_mapping_and_default_parameter():
     a = dict(b=1, c=2)
-    with MapGetter(a, default=lambda name: name) as a: # NOQA
+    with MapGetter(a, default=lambda name: name) as a:  # NOQA
         from a import b, c, d
     assert b == 1 and c == 2 and d == "d"
 
@@ -172,14 +172,15 @@ def test_mapgetter_works_with_enums():
     assert baz is A.baz
     assert foo.value == 0
 
+
 def test_extractor_extracts_to_single_local_variable():
     E = Extractor
     data = {"a": 1, "b": 2, "c": 3}
 
-
     b = E(data)
 
     assert b == 2
+
 
 def test_extractor_extracts_to_local_variables():
     E = Extractor
@@ -205,6 +206,7 @@ def test_extractor_extracts_to_local_variables_dangling_data():
 
 global_a = global_b = global_c = -1
 
+
 def test_extractor_extracts_to_global_variables():
     global global_a, global_b, global_c
 
@@ -227,7 +229,6 @@ def test_extractor_extracts_to_single_global_variable():
 
     E = Extractor
     data = {"global_a": 1, "global_b": 2, "global_c": 3}
-
     global_b = E(data)
 
     assert global_a == -1
@@ -235,7 +236,10 @@ def test_extractor_extracts_to_single_global_variable():
     assert global_c == -1
 
 
-
+@pytest.mark.skipif(
+    sys.implementation.name == "pypy" and sys.version_info[:2] == (3, 11),
+    reason="Known not to work in pypy3.11, as inspect won't disassemble the inner function",
+)
 def test_extractor_extracts_to_nonlocal_variables():
 
     a = b = c = None
