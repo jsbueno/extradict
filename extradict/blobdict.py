@@ -17,6 +17,14 @@ from threading import RLock
 import typing as t
 import math
 
+# TBD: structures here need some thread-safety:
+# if two entries of "BlobTextDict" are updated concurrently,
+# bad things will happen!
+
+
+# The current test scenarios where this is used in the trie, often have
+# a "loading" stage, after which these become mostly "readonly" -
+# - Maybe have a 'freeze' protocol here?
 
 _OVERHEAD = 3
 _SIZE_MASK = 0x7F

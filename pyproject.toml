@@ -15,7 +15,7 @@ dynamic = ["version"]
 description = "Miscelaneous data containers and utilities: A versioned dictionary, a bidirectional dictionary, a binary tree backed dictionary, a Grouper iterator mapper similar to itertools.tee, and an easy extractor from dictionary key/values to variables"
 keywords = ["versioned", "bijective", "assigner", "getter", "unpack", "transactional", "container", "collection", "dict", "dictionary", "normalized", "binarytree", "trie"]
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 authors = [{ name = "Joao S. O. Bueno" }]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -26,6 +26,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
@@ -43,17 +45,21 @@ dev = [
     "pytest-coverage",
 ]
 
-[tool.pytest.ini_options]
-testpaths = "tests"
-python_files = "test_*.py"
-python_functions = "test_*"
-addopts = "-v --doctest-modules"
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list = py310, py311, py312, py313, py314, pypy310, pypy311, py313t, py314t, py315
+
+[testenv]
+extras = dev
+commands = pytest
+"""
 
 [tool.mypy]
 implicit_reexport = true
 
 [tool.pytest]
-testpaths = "tests/"
-python_files = "test_*.py"
-python_functions = "test_*"
-addopts = "-v --doctest-modules"
+testpaths = ["tests/",]
+#python_files = "test_*.py"
+#python_functions = "test_*"
+addopts = ["-v",  "--doctest-modules"]
