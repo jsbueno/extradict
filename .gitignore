@@ -8,3 +8,5 @@ dist
 MANIFEST
 .cache
 *token.txt
+.python-version
+build/

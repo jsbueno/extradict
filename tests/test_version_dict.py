@@ -1,6 +1,6 @@
-from extradict import VersionDict as VD
-
 import pytest
+
+from extradict import VersionDict as VD
 
 
 @pytest.fixture
@@ -45,3 +45,20 @@ def test_vd_raises_keyerror(vd):
 
 def test_vd_update_increases_version_in_one_number(vd):
     pass
+
+
+def test_vd_copy_no_version(vd):
+    vd["a"] = 1
+    vd_copy = vd.copy()
+
+    assert vd._version == vd_copy._version
+
+    vd_copy["a"] = 2
+    assert vd._version != vd_copy._version
+
+
+def test_vd_copy_new_version(vd):
+    vd["a"] = 1
+    vd_copy = vd.copy(version=0)
+
+    assert vd_copy._version != vd._version
