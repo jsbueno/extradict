@@ -41,6 +41,8 @@ class VersionDict(MutableMapping):
 
     def copy(self, version=None):
         new = VersionDict.__new__(self.__class__)
+        new.local = threading.local()
+        new.local._updating = False
         new._init_lock()
         if version is None or version >= self.version:
             new._version = self._version
